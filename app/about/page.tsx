@@ -91,7 +91,7 @@ export default function About() {
             to learn more about opportunities to join our team.
             <br />
             <br />
-            For inquiries, contact us at ariareplyai@gmail.com.
+            For inquiries, contact us at ian@ariareply.com & mcorona@ariareply.com.
             <br />
             <br />
             Follow our updates on Instagram (@ariareply) and X (@ariareplyai).
