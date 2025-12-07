@@ -6,6 +6,8 @@ import { ArrowUp, Youtube, Package, Mail } from "lucide-react"
 import { EmailSignupModal } from "@/components/email-signup-modal"
 import { AboutOverlay } from "@/components/about-overlay"
 import { ScrollIndicator } from "@/components/scroll-indicator"
+import { ParticleEffect } from "@/components/particle-effect"
+import { ScrollArrow } from "@/components/scroll-arrow"
 
 // Custom easing curves - precisely tuned for premium feel
 const easeInOut = cubicBezier(0.4, 0, 0.2, 1)
@@ -79,6 +81,9 @@ export default function DiaAnimation() {
           opacity: darkBackgroundOpacity,
         }}
       />
+
+      <ParticleEffect fadeOutAt={0.3} />
+      <ScrollArrow hideAt={0.3} />
 
       <div className="relative z-10 h-[500vh]">
         {/* Step 1: The Overture - Precisely choreographed 3-second sequence */}
