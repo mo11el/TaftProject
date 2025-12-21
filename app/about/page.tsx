@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
+import { LiquidGlass } from "@/components/liquid-glass"
 
 export default function About() {
   const flags = Array.from({ length: 12 }).map((_, i) => ({
@@ -56,6 +57,13 @@ export default function About() {
           </div>
         ))}
       </div>
+
+      {/* Liquid Glass effect */}
+      <LiquidGlass
+        width={300}
+        height={200}
+        className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30"
+      />
 
       {/* Back button */}
       <div className="fixed top-6 left-6 z-50">

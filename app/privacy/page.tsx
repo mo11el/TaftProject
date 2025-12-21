@@ -2,10 +2,14 @@
 
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
+import { LiquidGlass } from "@/components/liquid-glass"
 
 export default function Privacy() {
   return (
     <div className="min-h-screen bg-black">
+      {/* Liquid Glass effect */}
+      <LiquidGlass width={300} height={200} className="fixed top-6 left-6 z-50" />
+
       {/* Back button */}
       <div className="fixed top-6 left-6 z-50">
         <Link href="/" className="flex items-center gap-2 text-white hover:text-gray-300 transition-colors">
