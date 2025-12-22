@@ -14,7 +14,7 @@ const steps = [
   {
     number: "02",
     title: "Aria Understands",
-    description: "Our AI parses your intent, understands timing, dates, and context automatically.",
+    description: "Aria uses native LLM intelligence to parses your intent, understands timing, dates, and context automatically.",
   },
   {
     number: "03",
