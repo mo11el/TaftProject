@@ -5,6 +5,7 @@ import type React from "react"
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { X } from "lucide-react"
+import { ShinyButton } from "./shiny-button"
 
 interface EmailSignupModalProps {
   isOpen: boolean
@@ -13,6 +14,7 @@ interface EmailSignupModalProps {
 
 export function EmailSignupModal({ isOpen, onClose }: EmailSignupModalProps) {
   const [email, setEmail] = useState("")
+  const [phone, setPhone] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
 
@@ -20,19 +22,19 @@ export function EmailSignupModal({ isOpen, onClose }: EmailSignupModalProps) {
     e.preventDefault()
     setIsSubmitting(true)
 
-    // TODO: Replace with your actual API endpoint
     try {
       const response = await fetch("/api/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, phone }),
       })
 
       if (response.ok) {
         setIsSuccess(true)
         setEmail("")
+        setPhone("")
         setTimeout(() => {
           onClose()
           setIsSuccess(false)
@@ -96,13 +98,24 @@ export function EmailSignupModal({ isOpen, onClose }: EmailSignupModalProps) {
                       />
                     </div>
 
-                    <button
+                    <div>
+                      <input
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="Enter your phone number"
+                        required
+                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                      />
+                    </div>
+
+                    <ShinyButton
                       type="submit"
                       disabled={isSubmitting}
-                      className="w-full bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full bg-blue-500 hover:bg-blue-600 text-white border-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isSubmitting ? "Submitting..." : "Get Early Access"}
-                    </button>
+                    </ShinyButton>
                   </form>
 
                   <p className="text-xs text-gray-500 text-center mt-4">

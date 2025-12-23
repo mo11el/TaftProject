@@ -9,6 +9,7 @@ import { ScrollIndicator } from "@/components/scroll-indicator"
 import { ParticleEffect } from "@/components/particle-effect"
 import { ScrollArrow } from "@/components/scroll-arrow"
 import { MorphingText } from "@/components/morphing-text"
+import { ShinyButton } from "@/components/shiny-button"
 
 // Custom easing curves - precisely tuned for premium feel
 const easeInOut = cubicBezier(0.4, 0, 0.2, 1)
@@ -87,7 +88,7 @@ export default function DiaAnimation() {
       />
 
       <motion.div
-        className="fixed inset-0 flex items-center justify-center z-20"
+        className="fixed inset-0 flex items-center justify-center z-20 pointer-events-none"
         style={{
           opacity: morphingTextOpacity,
           scale: morphingTextScale,
@@ -480,8 +481,9 @@ export default function DiaAnimation() {
               Aria's my secret weapon. I used to scramble whenever something came up last minute, now Aria keeps it all
               organized.
             </div>
-            <motion.button
-              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            <ShinyButton
+              onClick={() => setIsModalOpen(true)}
+              className="text-sm font-medium"
               style={{
                 opacity: useTransform(step6, [0.85, 1], [0, 1]),
                 y: useTransform(step6, [0.85, 1], [8, 0]),
@@ -490,7 +492,7 @@ export default function DiaAnimation() {
               transition={{ duration: 0.3, ease: easeOut }}
             >
               Simple
-            </motion.button>
+            </ShinyButton>
           </motion.div>
         </motion.div>
 
@@ -559,18 +561,25 @@ export default function DiaAnimation() {
                 </motion.div>
               </div>
 
-              <motion.button
-                onClick={() => setIsModalOpen(true)}
-                className="bg-white text-gray-900 px-6 py-3 rounded-full font-medium hover:bg-gray-100 transition-colors"
+              <motion.div
                 style={{
                   opacity: useTransform(step7, [0.7, 0.9], [0, 1]),
                   y: useTransform(step7, [0.7, 0.9], [10, 0]),
                   scale: useTransform(step7, [0.7, 0.9], [0.95, 1]),
                 }}
                 transition={{ duration: 0.4, ease: easeOut }}
+                className="z-50 relative pointer-events-auto"
               >
-                Let's Go
-              </motion.button>
+                <ShinyButton
+                  onClick={() => {
+                    console.log("[v0] Let's Go button clicked")
+                    setIsModalOpen(true)
+                  }}
+                  className="bg-white text-gray-900 px-8 py-4 rounded-full font-medium hover:bg-gray-100 border-gray-300 cursor-pointer"
+                >
+                  Let's Go
+                </ShinyButton>
+              </motion.div>
             </div>
 
             <div className="flex-shrink-0 w-32 flex items-center justify-center">

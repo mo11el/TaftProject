@@ -2,11 +2,15 @@ import { NextResponse } from "next/server"
 
 export async function POST(request: Request) {
   try {
-    const { email } = await request.json()
+    const { email, phone } = await request.json()
 
     // Validate email
     if (!email || !email.includes("@")) {
       return NextResponse.json({ error: "Invalid email address" }, { status: 400 })
+    }
+
+    if (!phone || phone.trim().length === 0) {
+      return NextResponse.json({ error: "Phone number is required" }, { status: 400 })
     }
 
     const SHEET_ID = process.env.GOOGLE_SHEET_ID
@@ -31,8 +35,7 @@ export async function POST(request: Request) {
     // Get access token using service account
     const jwtToken = await getGoogleAccessToken(credentials)
 
-    // Append to Google Sheet
-    const appendUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Sheet1!A:B:append?valueInputOption=USER_ENTERED`
+    const appendUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Sheet1!A:C:append?valueInputOption=USER_ENTERED`
 
     const timestamp = new Date().toISOString()
 
@@ -43,7 +46,7 @@ export async function POST(request: Request) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        values: [[email, timestamp]],
+        values: [[email, phone, timestamp]],
       }),
     })
 
@@ -67,7 +70,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Failed to save email" }, { status: 500 })
     }
 
-    console.log("[v0] New signup saved to Google Sheets:", email)
+    console.log("[v0] New signup saved to Google Sheets:", email, phone)
 
     return NextResponse.json({ success: true })
   } catch (error) {
