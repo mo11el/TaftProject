@@ -8,6 +8,7 @@ import { AboutOverlay } from "@/components/about-overlay"
 import { ScrollIndicator } from "@/components/scroll-indicator"
 import { ParticleEffect } from "@/components/particle-effect"
 import { ScrollArrow } from "@/components/scroll-arrow"
+import { MorphingText } from "@/components/morphing-text"
 
 // Custom easing curves - precisely tuned for premium feel
 const easeInOut = cubicBezier(0.4, 0, 0.2, 1)
@@ -50,6 +51,9 @@ export default function DiaAnimation() {
   const showStep6 = useTransform(scrollYProgress, [0.72, 0.75, 0.9, 0.93], [0, 1, 1, 0])
   const showStep7 = useTransform(scrollYProgress, [0.87, 0.9], [0, 1])
 
+  const morphingTextOpacity = useTransform(scrollYProgress, [0, 0.08], [1, 0])
+  const morphingTextScale = useTransform(scrollYProgress, [0, 0.08], [1, 0.95])
+
   return (
     <div ref={containerRef} className="relative">
       {/* Living Canvas Background - Subtly shifting colors */}
@@ -81,6 +85,33 @@ export default function DiaAnimation() {
           opacity: darkBackgroundOpacity,
         }}
       />
+
+      <motion.div
+        className="fixed inset-0 flex items-center justify-center z-20"
+        style={{
+          opacity: morphingTextOpacity,
+          scale: morphingTextScale,
+        }}
+      >
+        <MorphingText
+          texts={[
+            "You already live in iMessage.",
+            "So we built an assistant there.",
+            "Scroll to see how it works.",
+            "No apps to download.",
+            "This is what iMessage was missing.",
+            "Built for people who move fast.",
+            "The shortest path from thought to done.",
+            "The first real assistant inside iMessage.",
+            "Scroll to learn more.",
+          ]}
+          className="text-4xl md:text-5xl font-bold text-center max-w-4xl px-6"
+          style={{
+            fontFamily: "'Times New Roman', serif",
+            color: "#0F172A",
+          }}
+        />
+      </motion.div>
 
       <ParticleEffect fadeOutAt={0.3} />
       <ScrollArrow hideAt={0.3} />
