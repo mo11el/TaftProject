@@ -409,18 +409,18 @@ export default function DiaAnimation() {
             transition={{ duration: 0.5, ease: easeOut }}
           >
             <div className="grid grid-cols-3 gap-4 text-white text-sm">
-              <div className="font-medium">Feature</div>
-              <div className="font-medium">SMS Reminders</div>
-              <div className="font-medium">Tailored Alerts</div>
-              <div>Price</div>
-              <div>$3.99</div>
-              <div>per Month</div>
-              <div>Smart</div>
-              <div>Personal</div>
-              <div>Instant</div>
-              <div>Conversational</div>
-              <div>Adaptive</div>
-              <div>Seamless</div>
+              <div className="font-medium">Aria</div>
+              <div className="font-medium">Calendar</div>
+              <div className="font-medium">Siri</div>
+              <div>Texts like Human</div>
+              <div>Manual Input</div>
+              <div>Voice Commands</div>
+              <div>Takes Responsibility</div>
+              <div>Passive tracking</div>
+              <div>One-off actions</div>
+              <div>Effortless Delegation</div>
+              <div>Static rules</div>
+              <div>Limited Context</div>
             </div>
           </motion.div>
         </motion.div>
@@ -465,7 +465,7 @@ export default function DiaAnimation() {
             transition={{ duration: 0.5, ease: easeOut }}
           >
             <Mail className="w-5 h-5 text-blue-500" />
-            <span className="text-gray-800 font-medium">SMS</span>
+            <span className="text-gray-800 font-medium">iMessage</span>
           </motion.div>
 
           <motion.div
