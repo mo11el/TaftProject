@@ -133,8 +133,28 @@ export function EmailSignupModal({ isOpen, onClose }: EmailSignupModalProps) {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
-                  <h3 className="text-2xl font-serif text-gray-900 mb-2">You're on the list!</h3>
-                  <p className="text-gray-600">We'll be in touch soon.</p>
+                  <h3 className="text-2xl font-serif text-gray-900 mb-2">You&apos;re on the list!</h3>
+                  <p className="text-gray-600 mb-6">Now start a conversation with Aria</p>
+                  
+                  {/* iMessage Link - Simple anchor tag */}
+                  <a
+                    href="sms:+14156106180"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => {
+                      window.location.href = "sms:+14156106180"
+                    }}
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#34C759] hover:bg-[#2DB84D] text-white font-medium rounded-full transition-colors cursor-pointer"
+                  >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
+                    </svg>
+                    Message Aria on iMessage
+                  </a>
+                  
+                  <p className="text-xs text-gray-500 mt-4">
+                    Tap to open Messages and say hi to Aria
+                  </p>
                 </motion.div>
               )}
             </div>
