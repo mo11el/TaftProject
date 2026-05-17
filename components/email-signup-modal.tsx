@@ -133,22 +133,27 @@ export function EmailSignupModal({ isOpen, onClose }: EmailSignupModalProps) {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
-                  <h3 className="text-2xl font-serif text-gray-900 mb-2">You're on the list!</h3>
+                  <h3 className="text-2xl font-serif text-gray-900 mb-2">You&apos;re on the list!</h3>
                   <p className="text-gray-600 mb-6">Now start a conversation with Aria</p>
                   
-                  {/* iMessage Button */}
+                  {/* iMessage Link - Simple anchor tag */}
                   <a
-                    href="sms:+14156106180&body=Hi%20Aria!"
-                    className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#34C759] hover:bg-[#2DB84D] text-white font-medium rounded-full transition-colors"
+                    href="sms:+14156106180"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => {
+                      window.location.href = "sms:+14156106180"
+                    }}
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#34C759] hover:bg-[#2DB84D] text-white font-medium rounded-full transition-colors cursor-pointer"
                   >
                     <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M17.6 6.32A8.78 8.78 0 0 0 12 4a8.73 8.73 0 0 0-8 5.17 8.93 8.93 0 0 0 1.57 9.68L4 22l3.32-1.54a8.73 8.73 0 0 0 4.68 1.36 8.78 8.78 0 0 0 8.77-8.77 8.77 8.77 0 0 0-2.77-6.73zM12 19.82a6.72 6.72 0 0 1-3.62-1.05l-.26-.15-2.69 1.25.58-2.82-.17-.27a6.93 6.93 0 0 1 11.74-7.09A6.93 6.93 0 0 1 12 19.82z"/>
+                      <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
                     </svg>
-                    Open iMessage
+                    Message Aria on iMessage
                   </a>
                   
                   <p className="text-xs text-gray-500 mt-4">
-                    This will open iMessage on your device
+                    Tap to open Messages and say hi to Aria
                   </p>
                 </motion.div>
               )}
