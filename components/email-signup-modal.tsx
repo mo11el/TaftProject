@@ -4,7 +4,7 @@ import type React from "react"
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { X } from "lucide-react"
-import { LiquidGradientButton } from "./liquid-gradient-button"
+import { Liquid, defaultColors, type Colors } from "./liquid-gradient"
 
 interface EmailSignupModalProps {
   isOpen: boolean
@@ -16,6 +16,7 @@ export function EmailSignupModal({ isOpen, onClose }: EmailSignupModalProps) {
   const [phone, setPhone] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
+  const [isButtonHovered, setIsButtonHovered] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -132,13 +133,20 @@ export function EmailSignupModal({ isOpen, onClose }: EmailSignupModalProps) {
                       />
                     </div>
 
-                    <LiquidGradientButton
+                    <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                      onMouseEnter={() => setIsButtonHovered(true)}
+                      onMouseLeave={() => setIsButtonHovered(false)}
+                      className="relative w-full h-14 rounded-2xl overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {isSubmitting ? "Submitting..." : "Try Aria Now"}
-                    </LiquidGradientButton>
+                      <div className="absolute inset-0">
+                        <Liquid isHovered={isButtonHovered} colors={defaultColors} />
+                      </div>
+                      <span className="relative z-10 font-bold text-white text-lg">
+                        {isSubmitting ? "Submitting..." : "Try Aria Now"}
+                      </span>
+                    </button>
                   </form>
                 </div>
               ) : (
