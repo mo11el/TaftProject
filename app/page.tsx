@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react"
 import { motion, useScroll, useTransform, cubicBezier } from "framer-motion"
+import Link from "next/link"
 import { ArrowUp, Youtube, Package, Mail } from "lucide-react"
 import { EmailSignupModal } from "@/components/email-signup-modal"
 import { AboutOverlay } from "@/components/about-overlay"
@@ -57,6 +58,19 @@ export default function DiaAnimation() {
 
   return (
     <div ref={containerRef} className="relative">
+      {/* Enterprise Button - Fixed at top center */}
+      <Link
+        href="/acapulco"
+        className="fixed top-6 left-1/2 -translate-x-1/2 z-50 px-6 py-2 rounded-full backdrop-blur-md bg-white/10 border border-white/20 text-sm tracking-wider hover:bg-white/20 transition-all duration-300"
+        style={{
+          fontFamily: "Calibri, sans-serif",
+          color: "rgba(255, 255, 255, 0.9)",
+          textShadow: "0 1px 2px rgba(0, 0, 0, 0.1)",
+        }}
+      >
+        Enterprise
+      </Link>
+
       {/* Living Canvas Background - Subtly shifting colors */}
       <motion.div
         className="fixed inset-0"
