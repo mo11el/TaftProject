@@ -1,66 +1,262 @@
-'use client';
-
-import { useEffect } from 'react';
-
 export default function AcapulcoPage() {
-  useEffect(() => {
-    // Initialize Oil Shader Canvas
-    const canvas = document.getElementById('oil-canvas') as HTMLCanvasElement;
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-
-        let time = 0;
-        const animate = () => {
-          time += 0.005;
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-          // Oil shader effect with iridescent colors
-          const imageData = ctx.createImageData(canvas.width, canvas.height);
-          const data = imageData.data;
-
-          for (let i = 0; i < data.length; i += 4) {
-            const pixelIndex = i / 4;
-            const x = pixelIndex % canvas.width;
-            const y = Math.floor(pixelIndex / canvas.width);
-
-            // Perlin-like noise simulation with sine waves
-            const noise =
-              Math.sin(x * 0.005 + time) * 0.5 +
-              Math.sin(y * 0.005 + time) * 0.5 +
-              Math.sin((x + y) * 0.003 + time * 0.5) * 0.5;
-
-            // Iridescent color generation
-            const hue = (noise * 180 + time * 30) % 360;
-            const rgb = hslToRgb(hue, 80, 50);
-
-            data[i] = rgb.r;
-            data[i + 1] = rgb.g;
-            data[i + 2] = rgb.b;
-            data[i + 3] = Math.max(20, noise * 100 + 60);
-          }
-
-          ctx.putImageData(imageData, 0, 0);
-          requestAnimationFrame(animate);
-        };
-
-        animate();
-
-        const handleResize = () => {
-          canvas.width = window.innerWidth;
-          canvas.height = window.innerHeight;
-        };
-
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-      }
-    }
-  }, []);
-
   return (
     <>
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `
+            (() => {
+              // Wait for DOM to be ready
+              if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initPage);
+              } else {
+                initPage();
+              }
+
+              function initPage() {
+                // ─── CURSOR ───
+                const dot = document.getElementById('cursor-dot');
+                const ring = document.getElementById('cursor-ring');
+                let mx = 0, my = 0, rx = 0, ry = 0;
+                document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+                function animCursor() {
+                  rx += (mx - rx) * 0.12;
+                  ry += (my - ry) * 0.12;
+                  dot.style.left = mx + 'px'; dot.style.top = my + 'px';
+                  ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+                  requestAnimationFrame(animCursor);
+                }
+                animCursor();
+                document.querySelectorAll('a,button,.char-card,.system-item,.arch-list li').forEach(el => {
+                  el.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
+                  el.addEventListener('mouseleave', () => document.body.classList.remove('cursor-hover'));
+                });
+
+                // ─── NAVBAR SCROLL ───
+                window.addEventListener('scroll', () => {
+                  document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 60);
+                });
+
+                // ─── REVEAL ON SCROLL ───
+                const revealEls = document.querySelectorAll('.reveal');
+                const io = new IntersectionObserver((entries) => {
+                  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+                }, { threshold: 0.12 });
+                revealEls.forEach(el => io.observe(el));
+
+                // ─── GRADUAL BLUR ───
+                (function buildBlur() {
+                  const container = document.getElementById('hero-blur');
+                  const n = 8;
+                  for (let i = 1; i <= n; i++) {
+                    const p = i / n;
+                    const blurVal = Math.pow(2, p * 3.5) * 0.05;
+                    const p1 = Math.round(((i-1)/n)*100*10)/10;
+                    const p2 = Math.round((i/n)*100*10)/10;
+                    const p3 = Math.min(100, Math.round(((i+1)/n)*100*10)/10);
+                    const div = document.createElement('div');
+                    div.style.cssText = \`
+                      position:absolute;inset:0;
+                      mask-image:linear-gradient(to bottom,transparent \${p1}%,black \${p2}%,black \${p3}%,transparent 100%);
+                      -webkit-mask-image:linear-gradient(to bottom,transparent \${p1}%,black \${p2}%,black \${p3}%,transparent 100%);
+                      backdrop-filter:blur(\${blurVal.toFixed(3)}rem);
+                      -webkit-backdrop-filter:blur(\${blurVal.toFixed(3)}rem);
+                      pointer-events:none;
+                    \`;
+                    container.appendChild(div);
+                  }
+                })();
+
+                // ─── SYSTEMS LIST ───
+                const systems = [
+                  {
+                    name: 'iMessage Native',
+                    tags: ['Platform-Native','Conversational','Rhythm'],
+                    year: '2024',
+                    img: 'imessage'
+                  },
+                  {
+                    name: 'WhatsApp Intelligence',
+                    tags: ['Messaging','Adaptive','Global'],
+                    year: '2024',
+                    img: 'whatsapp'
+                  },
+                  {
+                    name: 'Social Presence',
+                    tags: ['Instagram','Brand Voice','Engagement'],
+                    year: '2023',
+                    img: 'instagram'
+                  },
+                  {
+                    name: 'Operator Dynamics',
+                    tags: ['High-Agency','Execution','Coordination'],
+                    year: '2023',
+                    img: null
+                  },
+                ];
+
+                // Simple SVG logos for iMessage, WhatsApp, Instagram
+                const logos = {
+                  imessage: \`<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:80px;height:80px">
+                    <rect width="100" height="100" rx="22" fill="#3DD650"/>
+                    <path d="M50 18C31.2 18 16 30.8 16 46.5c0 8.2 4.2 15.6 10.8 20.6L24 82l16.5-6.5A40.4 40.4 0 0050 77c18.8 0 34-12.8 34-30.5S68.8 18 50 18z" fill="white"/>
+                  </svg>\`,
+                  whatsapp: \`<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:80px;height:80px">
+                    <rect width="100" height="100" rx="22" fill="#25D366"/>
+                    <path d="M50 17C31.8 17 17 31.8 17 50c0 5.9 1.6 11.4 4.4 16.2L17 83l17.3-4.3A32.8 32.8 0 0050 83c18.2 0 33-14.8 33-33S68.2 17 50 17zm16.4 45.6c-.7 1.9-3.9 3.6-5.4 3.8-1.4.2-3.1.3-5-.3-1.2-.4-2.7-.9-4.6-1.7-8.1-3.5-13.4-11.7-13.8-12.2-.4-.6-3.3-4.4-3.3-8.4s2.1-5.9 2.8-6.7c.7-.8 1.6-.9 2.1-.9h1.5c.5 0 1.1.2 1.7 1.3.7 1.3 2.3 5.6 2.5 6 .2.4.3.8.1 1.3-.2.5-.3.8-.7 1.2l-1 1.1c-.4.4-.8.8-.3 1.6.4.8 1.9 3.2 4.1 5.1 2.8 2.5 5.2 3.3 5.9 3.7.7.3 1.2.3 1.6-.2.5-.5 2-2.3 2.5-3.1.5-.8 1-.7 1.7-.4.7.3 4.5 2.1 5.3 2.5.8.4 1.3.6 1.5 1 .2.3-.1 2-.8 3.9z" fill="white"/>
+                  </svg>\`,
+                  instagram: \`<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:80px;height:80px">
+                    <defs>
+                      <linearGradient id="ig" x1="0%" y1="100%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#f09433"/>
+                        <stop offset="25%" stop-color="#e6683c"/>
+                        <stop offset="50%" stop-color="#dc2743"/>
+                        <stop offset="75%" stop-color="#cc2366"/>
+                        <stop offset="100%" stop-color="#bc1888"/>
+                      </linearGradient>
+                    </defs>
+                    <rect width="100" height="100" rx="22" fill="url(#ig)"/>
+                    <rect x="28" y="28" width="44" height="44" rx="12" stroke="white" stroke-width="4" fill="none"/>
+                    <circle cx="50" cy="50" r="11" stroke="white" stroke-width="4" fill="none"/>
+                    <circle cx="66" cy="34" r="3" fill="white"/>
+                  </svg>\`
+                };
+
+                const listEl = document.getElementById('systems-list');
+                const floatImg = document.getElementById('float-img');
+                const floatImgSrc = document.getElementById('float-img-src');
+
+                systems.forEach((s, i) => {
+                  const item = document.createElement('div');
+                  item.className = 'system-item reveal';
+                  if (i > 0) item.classList.add(\`reveal-delay-\${Math.min(i,4)}\`);
+                  item.innerHTML = \`
+                    <div class="system-link">
+                      <span class="system-year">\${s.year}</span>
+                      <h3 class="system-name">\${s.name}</h3>
+                      <div class="system-tags">\${s.tags.map(t=>\`<span class="system-tag">\${t}</span>\`).join('')}</div>
+                    </div>
+                  \`;
+                  if (s.img && logos[s.img]) {
+                    item.addEventListener('mouseenter', (e) => {
+                      floatImgSrc.innerHTML = '';
+                      floatImgSrc.insertAdjacentHTML('beforeend', logos[s.img]);
+                      floatImg.classList.add('visible');
+                    });
+                    item.addEventListener('mousemove', (e) => {
+                      const rect = listEl.getBoundingClientRect();
+                      floatImg.style.left = (e.clientX - rect.left) + 'px';
+                      floatImg.style.top = (e.clientY - rect.top - 220) + 'px';
+                    });
+                    item.addEventListener('mouseleave', () => floatImg.classList.remove('visible'));
+                  }
+                  listEl.appendChild(item);
+                });
+
+                // re-observe new items
+                document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+                // ─── FOOTER CLOCK ───
+                function updateClock() {
+                  const n = new Date();
+                  const h = n.getHours().toString().padStart(2,'0');
+                  const m = n.getMinutes().toString().padStart(2,'0');
+                  const s = n.getSeconds().toString().padStart(2,'0');
+                  const ms = n.getMilliseconds().toString().padStart(3,'0');
+                  document.getElementById('footer-clock').textContent = \`\${h}:\${m}:\${s}.\${ms}\`;
+                }
+                setInterval(updateClock, 10);
+                document.getElementById('footer-year').textContent = new Date().getFullYear();
+
+                // ─── EMAIL MODAL ───
+                function openModal() { document.getElementById('email-modal').classList.add('open'); }
+                function closeModal() { document.getElementById('email-modal').classList.remove('open'); }
+                window.openModal = openModal;
+                window.closeModal = closeModal;
+                document.getElementById('email-modal').addEventListener('click', (e) => {
+                  if (e.target === e.currentTarget) closeModal();
+                });
+                window.sendEmail = function() {
+                  const name = document.getElementById('modal-name').value.trim();
+                  const email = document.getElementById('modal-email').value.trim();
+                  const msg = document.getElementById('modal-msg').value.trim();
+                  if (!name || !email || !msg) { alert('Please fill all fields.'); return; }
+                  const subject = encodeURIComponent(\`Acapulco Inquiry from \${name}\`);
+                  const body = encodeURIComponent(\`From: \${name}\\nEmail: \${email}\\n\\n\${msg}\`);
+                  window.location.href = \`mailto:ariareplyai@gmail.com?subject=\${subject}&body=\${body}\`;
+                  closeModal();
+                };
+
+                // ─── OIL CANVAS ───
+                const canvas = document.getElementById('oil-canvas');
+                if (canvas) {
+                  const ctx = canvas.getContext('2d');
+                  if (ctx) {
+                    canvas.width = window.innerWidth;
+                    canvas.height = window.innerHeight;
+
+                    let time = 0;
+                    const animate = () => {
+                      time += 0.005;
+                      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                      // Oil shader effect with iridescent colors
+                      const imageData = ctx.createImageData(canvas.width, canvas.height);
+                      const data = imageData.data;
+
+                      for (let i = 0; i < data.length; i += 4) {
+                        const pixelIndex = i / 4;
+                        const x = pixelIndex % canvas.width;
+                        const y = Math.floor(pixelIndex / canvas.width);
+
+                        // Perlin-like noise simulation with sine waves
+                        const noise =
+                          Math.sin(x * 0.005 + time) * 0.5 +
+                          Math.sin(y * 0.005 + time) * 0.5 +
+                          Math.sin((x + y) * 0.003 + time * 0.5) * 0.5;
+
+                        // Iridescent color generation
+                        const hue = (noise * 180 + time * 30) % 360;
+                        const rgb = hslToRgb(hue, 80, 50);
+
+                        data[i] = rgb.r;
+                        data[i + 1] = rgb.g;
+                        data[i + 2] = rgb.b;
+                        data[i + 3] = Math.max(20, noise * 100 + 60);
+                      }
+
+                      ctx.putImageData(imageData, 0, 0);
+                      requestAnimationFrame(animate);
+                    };
+
+                    animate();
+
+                    const handleResize = () => {
+                      canvas.width = window.innerWidth;
+                      canvas.height = window.innerHeight;
+                    };
+
+                    window.addEventListener('resize', handleResize);
+                  }
+                }
+              }
+
+              function hslToRgb(h, s, l) {
+                s /= 100;
+                l /= 100;
+                const k = (n) => (n + h / 30) % 12;
+                const a = s * Math.min(l, 1 - l);
+                const f = (n) => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+                return {
+                  r: Math.round(255 * f(0)),
+                  g: Math.round(255 * f(8)),
+                  b: Math.round(255 * f(4)),
+                };
+              }
+            })();
+          `,
+        }}
+      />
+
       <style>{`
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -764,55 +960,12 @@ export default function AcapulcoPage() {
         </div>
 
         <div className="systems-list" id="systems-list">
-          <div className="system-item">
-            <div className="system-link">
-              <div className="system-year">2024</div>
-              <div className="system-name">iMessage Native</div>
-              <div className="system-tags">
-                <span className="system-tag">Platform-Native</span>
-                <span className="system-tag">Conversational</span>
-                <span className="system-tag">Rhythm</span>
-              </div>
-            </div>
-          </div>
-          <div className="system-item">
-            <div className="system-link">
-              <div className="system-year">2024</div>
-              <div className="system-name">WhatsApp Intelligence</div>
-              <div className="system-tags">
-                <span className="system-tag">Messaging</span>
-                <span className="system-tag">Adaptive</span>
-                <span className="system-tag">Global</span>
-              </div>
-            </div>
-          </div>
-          <div className="system-item">
-            <div className="system-link">
-              <div className="system-year">2023</div>
-              <div className="system-name">Social Presence</div>
-              <div className="system-tags">
-                <span className="system-tag">Instagram</span>
-                <span className="system-tag">Brand Voice</span>
-                <span className="system-tag">Engagement</span>
-              </div>
-            </div>
-          </div>
-          <div className="system-item">
-            <div className="system-link">
-              <div className="system-year">2023</div>
-              <div className="system-name">Operator Dynamics</div>
-              <div className="system-tags">
-                <span className="system-tag">High-Agency</span>
-                <span className="system-tag">Execution</span>
-                <span className="system-tag">Coordination</span>
-              </div>
-            </div>
-          </div>
+          {/* Items injected by JS */}
         </div>
 
         {/* Floating image for hover */}
         <div className="float-image" id="float-img">
-          <img id="float-img-src" src="" alt="" />
+          <div id="float-img-src"></div>
           <div className="float-image-tint"></div>
         </div>
       </section>
@@ -946,7 +1099,7 @@ export default function AcapulcoPage() {
 
       {/* FOOTER / LET'S COLLABORATE */}
       <footer id="contact">
-        <div className="cta-block" id="cta-block" onClick={() => { const modal = document.getElementById('email-modal'); if (modal) modal.classList.add('open'); }}>
+        <div className="cta-block" id="cta-block" onClick={() => window.openModal?.()}>
           <div className="cta-curtain"></div>
           <div className="cta-inner">
             <h2 className="cta-h2">Let's <em>Collaborate</em></h2>
@@ -976,94 +1129,11 @@ export default function AcapulcoPage() {
           <input type="email" placeholder="YOUR EMAIL" id="modal-email" />
           <textarea placeholder="TELL US ABOUT YOUR PROJECT" id="modal-msg"></textarea>
           <div className="modal-actions">
-            <button className="btn-send" onClick={() => { alert('Message sent!'); document.getElementById('email-modal')?.classList.remove('open'); }}>SEND MESSAGE</button>
-            <button className="btn-cancel" onClick={() => { document.getElementById('email-modal')?.classList.remove('open'); }}>CANCEL</button>
+            <button className="btn-send" onClick={() => window.sendEmail?.()}>SEND MESSAGE</button>
+            <button className="btn-cancel" onClick={() => window.closeModal?.()}>CANCEL</button>
           </div>
         </div>
       </div>
-
-      <script>{`
-        // ─── CURSOR ───
-        const dot = document.getElementById('cursor-dot');
-        const ring = document.getElementById('cursor-ring');
-        let mx = 0, my = 0, rx = 0, ry = 0;
-        document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
-        function animCursor() {
-          rx += (mx - rx) * 0.12;
-          ry += (my - ry) * 0.12;
-          dot.style.left = mx + 'px'; dot.style.top = my + 'px';
-          ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
-          requestAnimationFrame(animCursor);
-        }
-        animCursor();
-        document.querySelectorAll('a,button,.char-card,.system-item,.arch-list li').forEach(el => {
-          el.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
-          el.addEventListener('mouseleave', () => document.body.classList.remove('cursor-hover'));
-        });
-
-        // ─── NAVBAR SCROLL ───
-        window.addEventListener('scroll', () => {
-          document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 60);
-        });
-
-        // ─── REVEAL ON SCROLL ───
-        const revealEls = document.querySelectorAll('.reveal');
-        const io = new IntersectionObserver((entries) => {
-          entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
-        }, { threshold: 0.12 });
-        revealEls.forEach(el => io.observe(el));
-
-        // ─── GRADUAL BLUR ───
-        (function buildBlur() {
-          const container = document.getElementById('hero-blur');
-          const n = 8;
-          for (let i = 1; i <= n; i++) {
-            const p = i / n;
-            const blurVal = Math.pow(2, p * 3.5) * 0.05;
-            const p1 = Math.round(((i-1)/n)*100*10)/10;
-            const p2 = Math.round((i/n)*100*10)/10;
-            const p3 = Math.min(100, Math.round(((i+1)/n)*100*10)/10);
-            const div = document.createElement('div');
-            div.style.cssText = \`
-              position:absolute;inset:0;
-              mask-image:linear-gradient(to bottom,transparent \${p1}%,black \${p2}%,black \${p3}%,transparent 100%);
-              -webkit-mask-image:linear-gradient(to bottom,transparent \${p1}%,black \${p2}%,black \${p3}%,transparent 100%);
-              backdrop-filter:blur(\${blurVal.toFixed(3)}rem);
-              -webkit-backdrop-filter:blur(\${blurVal.toFixed(3)}rem);
-              pointer-events:none;
-            \`;
-            container.appendChild(div);
-          }
-        })();
-
-        // ─── FOOTER CLOCK ───
-        function updateClock() {
-          const now = new Date();
-          const hours = String(now.getHours()).padStart(2, '0');
-          const minutes = String(now.getMinutes()).padStart(2, '0');
-          const seconds = String(now.getSeconds()).padStart(2, '0');
-          const ms = String(now.getMilliseconds()).padStart(3, '0');
-          document.getElementById('footer-clock').textContent = \`\${hours}:\${minutes}:\${seconds}.\${ms}\`;
-        }
-        updateClock();
-        setInterval(updateClock, 50);
-
-        // ─── FOOTER YEAR ───
-        document.getElementById('footer-year').textContent = new Date().getFullYear();
-      `}</script>
     </>
   );
-}
-
-function hslToRgb(h: number, s: number, l: number) {
-  s /= 100;
-  l /= 100;
-  const k = (n: number) => (n + h / 30) % 12;
-  const a = s * Math.min(l, 1 - l);
-  const f = (n: number) => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
-  return {
-    r: Math.round(255 * f(0)),
-    g: Math.round(255 * f(8)),
-    b: Math.round(255 * f(4)),
-  };
 }
