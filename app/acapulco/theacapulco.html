@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acapulco — Behavior Infrastructure for AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Editorial+New:ital,wght@0,400;1,400&family=Geist+Mono:wght@300;400&family=Geist:wght@200;300;400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #050505;
+    --fg: #fafafa;
+    --muted: rgba(250,250,250,0.38);
+    --accent: #2563eb;
+    --border: rgba(250,250,250,0.08);
+    --font-display: 'Editorial New', Georgia, serif;
+    --font-mono: 'Geist Mono', monospace;
+    --font-sans: 'Geist', system-ui, sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* ─── CUSTOM CURSOR ─── */
+  #cursor-dot {
+    position: fixed;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--fg);
+    pointer-events: none;
+    z-index: 99999;
+    transform: translate(-50%,-50%);
+    transition: transform 0.1s, background 0.2s, width 0.2s, height 0.2s;
+    mix-blend-mode: difference;
+  }
+  #cursor-ring {
+    position: fixed;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 1px solid rgba(250,250,250,0.5);
+    pointer-events: none;
+    z-index: 99998;
+    transform: translate(-50%,-50%);
+    transition: transform 0.08s linear, width 0.3s, height 0.3s, border-color 0.3s;
+    mix-blend-mode: difference;
+  }
+  body.cursor-hover #cursor-dot { width: 10px; height: 10px; background: var(--accent); }
+  body.cursor-hover #cursor-ring { width: 48px; height: 48px; border-color: var(--accent); }
+
+  /* ─── NAVBAR ─── */
+  #navbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 48px;
+    transition: background 0.4s, backdrop-filter 0.4s, border-bottom 0.4s;
+  }
+  #navbar.scrolled {
+    background: rgba(5,5,5,0.85);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo {
+    display: flex; align-items: center; gap: 8px;
+    text-decoration: none;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    color: var(--muted);
+    cursor: none;
+  }
+  .nav-logo-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    transition: transform 0.3s;
+  }
+  .nav-logo:hover .nav-logo-dot { transform: scale(1.5); }
+  .nav-links { display: flex; gap: 32px; list-style: none; }
+  .nav-links a {
+    font-family: var(--font-mono); font-size: 11px;
+    letter-spacing: 0.15em; color: var(--muted);
+    text-decoration: none; cursor: none;
+    position: relative; transition: color 0.3s;
+  }
+  .nav-links a .num { color: var(--accent); margin-right: 4px; }
+  .nav-links a::after {
+    content: ''; position: absolute; bottom: -2px; left: 0;
+    width: 0; height: 1px; background: var(--fg);
+    transition: width 0.3s;
+  }
+  .nav-links a:hover { color: var(--fg); }
+  .nav-links a:hover::after { width: 100%; }
+  .nav-status { display: flex; align-items: center; gap: 8px; }
+  .nav-ping {
+    position: relative; width: 8px; height: 8px;
+  }
+  .nav-ping span {
+    position: absolute; border-radius: 50%;
+    width: 100%; height: 100%;
+    background: var(--accent);
+  }
+  .nav-ping .ping-anim {
+    animation: ping 1.5s infinite;
+    opacity: 0.6;
+  }
+  @keyframes ping {
+    0% { transform: scale(1); opacity: 0.6; }
+    100% { transform: scale(2.5); opacity: 0; }
+  }
+  .nav-status-text {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.2em; color: var(--muted);
+  }
+  @media (max-width: 768px) {
+    #navbar { padding: 16px 24px; }
+    .nav-links, .nav-status { display: none; }
+  }
+
+  /* ─── HERO / OIL SHADER ─── */
+  #hero {
+    position: relative; height: 100vh; width: 100%;
+    overflow: hidden; background: #000;
+  }
+  #oil-canvas {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    display: block; touch-action: none;
+  }
+  .hero-overlay {
+    position: absolute; inset: 0; z-index: 10;
+    display: flex; flex-direction: column;
+    justify-content: space-between;
+    padding: 120px 48px 60px;
+    pointer-events: none;
+  }
+  .hero-tl { max-width: 420px; }
+  .hero-eyebrow {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.3em; color: var(--muted); margin-bottom: 12px;
+  }
+  .hero-h1 {
+    font-family: var(--font-display);
+    font-size: clamp(42px, 7vw, 88px);
+    font-weight: 400; line-height: 0.95;
+    letter-spacing: -0.02em;
+  }
+  .hero-h1 em { font-style: italic; }
+  .hero-br { align-self: flex-end; text-align: right; max-width: 400px; }
+  .hero-sub {
+    font-family: var(--font-sans); font-size: 13px;
+    color: var(--muted); line-height: 1.7;
+    letter-spacing: 0.01em; max-width: 320px; margin-left: auto;
+  }
+  .hero-cta-wrapper {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%,-50%); z-index: 20;
+    pointer-events: auto;
+  }
+  .hero-cta {
+    position: relative;
+    padding: 14px 36px;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 100px;
+    font-family: var(--font-mono); font-size: 11px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    background: transparent;
+    color: var(--fg);
+    cursor: none;
+    transition: background 0.4s, color 0.4s;
+    backdrop-filter: blur(8px);
+  }
+  .hero-cta:hover { background: var(--fg); color: var(--bg); }
+  .hero-cta .cta-dot {
+    position: absolute; top: -4px; right: -4px;
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent);
+    animation: ping 1.5s infinite;
+  }
+  .scroll-indicator {
+    position: absolute; bottom: 32px; left: 50%;
+    transform: translateX(-50%); z-index: 20;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    pointer-events: none;
+    animation: fadeIn 1s 2s both;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .scroll-label {
+    font-family: var(--font-mono); font-size: 9px;
+    letter-spacing: 0.3em; color: var(--muted);
+  }
+  .scroll-line {
+    width: 1px; height: 40px;
+    background: linear-gradient(to bottom, rgba(250,250,250,0.5), transparent);
+    animation: scrollBob 1.5s ease-in-out infinite;
+  }
+  @keyframes scrollBob {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(8px); }
+  }
+
+  /* ─── GRADUAL BLUR ─── */
+  .gradual-blur-bottom {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 180px; z-index: 15; pointer-events: none;
+  }
+  .gradual-blur-bottom div {
+    position: absolute; inset: 0;
+  }
+
+  /* ─── SECTIONS COMMON ─── */
+  section { position: relative; }
+  .eyebrow {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.3em; color: var(--muted); margin-bottom: 20px;
+  }
+  .section-divider {
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(250,250,250,0.12), transparent);
+    margin: 0 48px;
+  }
+
+  /* ─── PHILOSOPHY / ABOUT ─── */
+  #philosophy {
+    padding: 120px 0 0;
+    overflow: hidden;
+  }
+  .philosophy-header { padding: 0 48px 80px; }
+  .philosophy-h2 {
+    font-family: var(--font-display);
+    font-size: clamp(32px, 5vw, 64px);
+    font-weight: 400; font-style: italic;
+    line-height: 1.1;
+  }
+  .marquee-track {
+    position: relative;
+    height: 110px;
+    overflow: hidden;
+    display: flex; align-items: center;
+  }
+  .marquee-inner {
+    display: flex; gap: 80px;
+    white-space: nowrap;
+    will-change: transform;
+  }
+  .marquee-inner.left { animation: marqueeLeft 30s linear infinite; }
+  .marquee-inner.right { animation: marqueeRight 30s linear infinite; }
+  @keyframes marqueeLeft {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  @keyframes marqueeRight {
+    from { transform: translateX(-50%); }
+    to { transform: translateX(0); }
+  }
+  .marquee-word {
+    font-family: var(--font-display);
+    font-size: clamp(52px, 8vw, 96px);
+    font-weight: 400; letter-spacing: -0.02em;
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(250,250,250,0.25);
+    cursor: default;
+    transition: color 0.3s, -webkit-text-stroke 0.3s;
+    white-space: nowrap;
+  }
+  .marquee-word:hover {
+    color: var(--fg);
+    -webkit-text-stroke: none;
+  }
+  .marquee-dot { color: rgba(250,250,250,0.15); margin: 0 16px; }
+
+  /* ─── BEHAVIORAL SYSTEMS (WORKS) ─── */
+  #systems {
+    padding: 120px 48px 80px;
+    position: relative;
+  }
+  .systems-header { margin-bottom: 80px; }
+  .systems-h2 {
+    font-family: var(--font-display);
+    font-size: clamp(28px, 4vw, 56px);
+    font-style: italic; font-weight: 400;
+  }
+  .systems-list { position: relative; }
+  .system-item {
+    border-top: 1px solid var(--border);
+    padding: 36px 0;
+    position: relative;
+    cursor: none;
+  }
+  .system-item:last-child { border-bottom: 1px solid var(--border); }
+  .system-link {
+    display: flex; flex-direction: column;
+    gap: 16px;
+    text-decoration: none; color: inherit;
+    cursor: none;
+  }
+  @media (min-width: 768px) {
+    .system-link {
+      flex-direction: row; align-items: center;
+      justify-content: space-between;
+    }
+  }
+  .system-year {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.2em; color: var(--muted);
+    width: 60px; flex-shrink: 0;
+  }
+  .system-name {
+    font-family: var(--font-display);
+    font-size: clamp(36px, 6vw, 80px);
+    font-weight: 400; letter-spacing: -0.02em;
+    flex: 1; transition: transform 0.3s, color 0.3s;
+  }
+  .system-item:hover .system-name {
+    transform: translateX(20px);
+    color: rgba(250,250,250,0.6);
+  }
+  .system-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+  .system-tag {
+    font-family: var(--font-mono); font-size: 9px;
+    letter-spacing: 0.15em;
+    padding: 5px 12px; border: 1px solid var(--border);
+    border-radius: 100px; color: var(--muted);
+  }
+
+  /* Floating image on hover */
+  .float-image {
+    position: absolute; pointer-events: none; z-index: 50;
+    width: 260px; height: 180px;
+    overflow: hidden; border-radius: 8px;
+    opacity: 0; transform: scale(0.85);
+    transition: opacity 0.2s, transform 0.2s;
+  }
+  .float-image.visible { opacity: 1; transform: scale(1); }
+  .float-image img {
+    width: 100%; height: 100%; object-fit: contain;
+    background: #111;
+    padding: 20px;
+    filter: brightness(0.9);
+  }
+  .float-image-tint {
+    position: absolute; inset: 0;
+    background: rgba(37,99,235,0.08);
+  }
+
+  /* ─── TECH MARQUEE (Technical Arsenal) ─── */
+  #tech {
+    padding: 80px 0 120px;
+    overflow: hidden;
+  }
+  .tech-header { padding: 0 48px 64px; }
+
+  /* ─── CHARACTERIZATION ─── */
+  #characterization {
+    padding: 120px 48px;
+    border-top: 1px solid var(--border);
+  }
+  .char-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 40px; margin-top: 64px;
+  }
+  @media (min-width: 768px) {
+    .char-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+  }
+  @media (min-width: 1024px) {
+    .char-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  .char-card {
+    border: 1px solid var(--border);
+    padding: 32px; border-radius: 2px;
+    transition: border-color 0.3s, background 0.3s;
+    cursor: none;
+  }
+  .char-card:hover {
+    border-color: rgba(250,250,250,0.25);
+    background: rgba(250,250,250,0.02);
+  }
+  .char-card-title {
+    font-family: var(--font-display);
+    font-size: 22px; font-style: italic;
+    margin-bottom: 16px;
+  }
+  .char-card-body {
+    font-size: 13px; line-height: 1.75;
+    color: var(--muted);
+  }
+  .char-card-num {
+    font-family: var(--font-mono); font-size: 9px;
+    letter-spacing: 0.2em; color: var(--accent);
+    margin-bottom: 16px;
+  }
+
+  /* ─── ARCHITECTURE ─── */
+  #architecture {
+    padding: 120px 48px;
+    background: rgba(250,250,250,0.015);
+    border-top: 1px solid var(--border);
+  }
+  .arch-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 64px; margin-top: 64px;
+  }
+  @media (min-width: 768px) {
+    .arch-grid { grid-template-columns: 1fr 1fr; }
+  }
+  .arch-copy {
+    font-size: 14px; line-height: 2; color: var(--muted);
+    max-width: 520px;
+  }
+  .arch-copy p { margin-bottom: 20px; }
+  .arch-list {
+    list-style: none; display: flex; flex-direction: column; gap: 0;
+  }
+  .arch-list li {
+    font-family: var(--font-mono); font-size: 11px;
+    letter-spacing: 0.1em; color: var(--muted);
+    padding: 14px 0; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px;
+    transition: color 0.3s, padding-left 0.3s;
+    cursor: none;
+  }
+  .arch-list li:hover { color: var(--fg); padding-left: 8px; }
+  .arch-list li::before {
+    content: '—'; color: var(--accent); flex-shrink: 0;
+  }
+  .arch-h2 {
+    font-family: var(--font-display);
+    font-size: clamp(28px, 4vw, 52px);
+    font-style: italic; font-weight: 400;
+    line-height: 1.1; margin-bottom: 8px;
+  }
+
+  /* ─── VISION ─── */
+  #vision {
+    padding: 140px 48px;
+    border-top: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .vision-h2 {
+    font-family: var(--font-display);
+    font-size: clamp(36px, 6vw, 80px);
+    font-weight: 400; line-height: 1.05;
+    letter-spacing: -0.02em; max-width: 900px;
+  }
+  .vision-h2 em { font-style: italic; color: rgba(250,250,250,0.6); }
+  .vision-copy {
+    margin-top: 48px; max-width: 560px;
+    font-size: 14px; line-height: 2; color: var(--muted);
+  }
+  .vision-copy p { margin-bottom: 16px; }
+
+  /* ─── FOOTER / CTA ─── */
+  #contact {
+    border-top: 1px solid var(--border);
+    position: relative; overflow: hidden;
+  }
+  .cta-block {
+    display: block; padding: 80px 48px;
+    text-decoration: none; cursor: none;
+    position: relative; overflow: hidden;
+  }
+  .cta-curtain {
+    position: absolute; inset: 0; background: var(--accent);
+    transform: translateY(100%);
+    transition: transform 0.5s cubic-bezier(0.25,0.46,0.45,0.94);
+    z-index: 0;
+  }
+  .cta-block:hover .cta-curtain { transform: translateY(0); }
+  .cta-inner {
+    position: relative; z-index: 1;
+    display: flex; align-items: center; justify-content: space-between; gap: 32px;
+  }
+  .cta-h2 {
+    font-family: var(--font-display);
+    font-size: clamp(36px, 7vw, 96px);
+    font-weight: 400; line-height: 1;
+    transition: color 0.3s;
+  }
+  .cta-h2 em { font-style: italic; }
+  .cta-block:hover .cta-h2 { color: #050505; }
+  .cta-arrow {
+    font-size: 48px; line-height: 1;
+    transition: transform 0.3s, color 0.3s;
+    flex-shrink: 0;
+  }
+  .cta-block:hover .cta-arrow { transform: rotate(45deg); color: #050505; }
+
+  /* Email modal */
+  .email-modal-overlay {
+    position: fixed; inset: 0; z-index: 9000;
+    background: rgba(5,5,5,0.85); backdrop-filter: blur(12px);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .email-modal-overlay.open { opacity: 1; pointer-events: auto; }
+  .email-modal {
+    background: #0c0c0c; border: 1px solid var(--border);
+    padding: 48px; max-width: 480px; width: 90%;
+    border-radius: 4px;
+    transform: translateY(20px);
+    transition: transform 0.3s;
+  }
+  .email-modal-overlay.open .email-modal { transform: translateY(0); }
+  .email-modal h3 {
+    font-family: var(--font-display); font-size: 32px;
+    font-style: italic; margin-bottom: 8px;
+  }
+  .email-modal p {
+    font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 32px;
+  }
+  .email-modal input {
+    width: 100%; background: rgba(250,250,250,0.05);
+    border: 1px solid var(--border); color: var(--fg);
+    padding: 12px 16px; font-family: var(--font-mono);
+    font-size: 12px; margin-bottom: 16px; border-radius: 2px;
+    outline: none; transition: border-color 0.3s;
+  }
+  .email-modal input:focus { border-color: rgba(250,250,250,0.3); }
+  .email-modal textarea {
+    width: 100%; background: rgba(250,250,250,0.05);
+    border: 1px solid var(--border); color: var(--fg);
+    padding: 12px 16px; font-family: var(--font-sans);
+    font-size: 13px; line-height: 1.6;
+    margin-bottom: 24px; border-radius: 2px;
+    outline: none; resize: vertical; min-height: 120px;
+    transition: border-color 0.3s;
+  }
+  .email-modal textarea:focus { border-color: rgba(250,250,250,0.3); }
+  .modal-actions { display: flex; gap: 12px; }
+  .btn-send {
+    flex: 1; padding: 12px; background: var(--fg); color: var(--bg);
+    border: none; font-family: var(--font-mono); font-size: 11px;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    border-radius: 2px; cursor: none; transition: background 0.3s;
+  }
+  .btn-send:hover { background: rgba(250,250,250,0.85); }
+  .btn-cancel {
+    padding: 12px 20px; background: transparent; color: var(--muted);
+    border: 1px solid var(--border); font-family: var(--font-mono);
+    font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase;
+    border-radius: 2px; cursor: none; transition: color 0.3s;
+  }
+  .btn-cancel:hover { color: var(--fg); }
+
+  /* footer info bar */
+  .footer-bar {
+    padding: 24px 48px; border-top: 1px solid var(--border);
+    display: flex; flex-wrap: wrap; align-items: center;
+    justify-content: space-between; gap: 16px;
+  }
+  .footer-time {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.2em; color: var(--muted);
+  }
+  .footer-time span { color: var(--fg); }
+  .footer-links { display: flex; gap: 32px; }
+  .footer-links a {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.2em; color: var(--muted);
+    text-decoration: none; cursor: none; transition: color 0.3s;
+  }
+  .footer-links a:hover { color: var(--fg); }
+  .footer-loc {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.15em; color: var(--muted);
+  }
+  .footer-copy {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.2em; color: var(--muted);
+  }
+
+  /* ─── ANIMATION HELPERS ─── */
+  .reveal {
+    opacity: 0; transform: translateY(32px);
+    transition: opacity 0.9s cubic-bezier(0.25,0.46,0.45,0.94),
+                transform 0.9s cubic-bezier(0.25,0.46,0.45,0.94);
+  }
+  .reveal.visible { opacity: 1; transform: none; }
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+  .reveal-delay-3 { transition-delay: 0.3s; }
+  .reveal-delay-4 { transition-delay: 0.4s; }
+
+  /* ─── SECTION SEPARATORS ─── */
+  .sep {
+    margin: 0 48px;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--border), transparent);
+  }
+
+  /* ─── BUILT BTWN badge ─── */
+  .built-badge {
+    position: fixed; bottom: 28px; right: 48px; z-index: 500;
+    font-family: var(--font-mono); font-size: 9px;
+    letter-spacing: 0.2em; color: rgba(250,250,250,0.2);
+    writing-mode: vertical-rl; text-orientation: mixed;
+    transform: rotate(180deg);
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<!-- Custom cursor -->
+<div id="cursor-dot"></div>
+<div id="cursor-ring"></div>
+
+<!-- Built badge -->
+<div class="built-badge">BUILT BTWN NYC | CDMX</div>
+
+<!-- Navbar -->
+<header id="navbar">
+  <a href="#" class="nav-logo" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;">
+    <span>ACAPULCO</span>
+    <span class="nav-logo-dot"></span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#philosophy"><span class="num">01</span>PHILOSOPHY</a></li>
+    <li><a href="#systems"><span class="num">02</span>SYSTEMS</a></li>
+    <li><a href="#architecture"><span class="num">03</span>ARCHITECTURE</a></li>
+    <li><a href="#contact"><span class="num">04</span>CONTACT</a></li>
+  </ul>
+  <div class="nav-status">
+    <div class="nav-ping">
+      <span class="ping-anim"></span>
+      <span></span>
+    </div>
+    <span class="nav-status-text">ARIAREPLY</span>
+  </div>
+</header>
+
+<!-- HERO — Oil Shader -->
+<section id="hero">
+  <canvas id="oil-canvas" aria-label="Interactive iridescent oil shader"></canvas>
+
+  <!-- Gradual blur at bottom -->
+  <div class="gradual-blur-bottom" id="hero-blur"></div>
+
+  <div class="hero-overlay">
+    <div class="hero-tl reveal">
+      <p class="hero-eyebrow">01 — BEHAVIOR INFRASTRUCTURE</p>
+      <h1 class="hero-h1">BEHAVIOR<br><em>INFRASTRUCTURE</em><br>FOR AI</h1>
+    </div>
+    <div class="hero-br reveal reveal-delay-2">
+      <p class="hero-sub">Meticulously crafted behavioral systems and bespoke characterization frameworks for agents, copilots, and AI assistants.</p>
+    </div>
+  </div>
+
+  <div class="hero-cta-wrapper">
+    <button class="hero-cta" onclick="document.getElementById('systems').scrollIntoView({behavior:'smooth'})">
+      Explore Behaviors
+      <span class="cta-dot"></span>
+    </button>
+  </div>
+
+  <div class="scroll-indicator">
+    <span class="scroll-label">SCROLL</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+<!-- PHILOSOPHY / About -->
+<section id="philosophy">
+  <div class="philosophy-header">
+    <p class="eyebrow reveal">03 — PHILOSOPHY</p>
+    <h2 class="philosophy-h2 reveal reveal-delay-1">Models Think.<br><em style="color:rgba(250,250,250,0.5)">Behavior Connects.</em></h2>
+  </div>
+
+  <div class="marquee-track">
+    <div class="marquee-inner left" id="marquee-1">
+      <span class="marquee-word">The pauses.</span><span class="marquee-dot">•</span>
+      <span class="marquee-word">The pacing.</span><span class="marquee-dot">•</span>
+      <span class="marquee-word">The initiative.</span><span class="marquee-dot">•</span>
+      <span class="marquee-word">The communication style.</span><span class="marquee-dot">•</span>
+      <span class="marquee-word">The emotional calibration.</span><span class="marquee-dot">•</span>
+      <span class="marquee-word">The pauses.</span><span class="marquee-dot">•</span>
+      <span class="marquee-word">The pacing.</span><span class="marquee-dot">•</span>
+      <span class="marquee-word">The initiative.</span><span class="marquee-dot">•</span>
+      <span class="marquee-word">The communication style.</span><span class="marquee-dot">•</span>
+      <span class="marquee-word">The emotional calibration.</span><span class="marquee-dot">•</span>
+    </div>
+  </div>
+  <div class="marquee-track" style="margin-top:12px">
+    <div class="marquee-inner right" id="marquee-2">
+      <span class="marquee-word">Users remember how it made them feel.</span><span class="marquee-dot">•</span>
+      <span class="marquee-word">Behavior is becoming infrastructure.</span><span class="marquee-dot">•</span>
+      <span class="marquee-word">Users remember how it made them feel.</span><span class="marquee-dot">•</span>
+      <span class="marquee-word">Behavior is becoming infrastructure.</span><span class="marquee-dot">•</span>
+    </div>
+  </div>
+
+  <div class="sep" style="margin-top:80px"></div>
+</section>
+
+<!-- BEHAVIORAL SYSTEMS -->
+<section id="systems">
+  <div class="systems-header">
+    <p class="eyebrow reveal">04 — BEHAVIORAL SYSTEMS</p>
+    <h2 class="systems-h2 reveal reveal-delay-1">A Library of <em style="font-style:italic">Human Dynamics</em></h2>
+  </div>
+
+  <div class="systems-list" id="systems-list">
+    <!-- Items injected by JS -->
+  </div>
+
+  <!-- Floating image for hover -->
+  <div class="float-image" id="float-img">
+    <img id="float-img-src" src="" alt="">
+    <div class="float-image-tint"></div>
+  </div>
+</section>
+
+<!-- TECH MARQUEE -->
+<section id="tech">
+  <div class="tech-header">
+    <p class="eyebrow reveal">05 — TECHNICAL ARSENAL</p>
+  </div>
+  <div class="marquee-track">
+    <div class="marquee-inner left">
+      <span class="marquee-word">Behavioral Frameworks</span><span class="marquee-dot">•</span>
+      <span class="marquee-word">Personality Architecture</span><span class="marquee-dot">•</span>
+      <span class="marquee-word">Conversational Design</span><span class="marquee-dot">•</span>
+      <span class="marquee-word">Memory Heuristics</span><span class="marquee-dot">•</span>
+      <span class="marquee-word">Composable Systems</span><span class="marquee-dot">•</span>
+      <span class="marquee-word">Behavioral Frameworks</span><span class="marquee-dot">•</span>
+      <span class="marquee-word">Personality Architecture</span><span class="marquee-dot">•</span>
+      <span class="marquee-word">Conversational Design</span><span class="marquee-dot">•</span>
+      <span class="marquee-word">Memory Heuristics</span><span class="marquee-dot">•</span>
+      <span class="marquee-word">Composable Systems</span><span class="marquee-dot">•</span>
+    </div>
+  </div>
+  <div class="marquee-track" style="margin-top:12px">
+    <div class="marquee-inner right">
+      <span class="marquee-word">Initiative Models</span><span class="marquee-dot">•</span>
+      <span class="marquee-word">Emotional Calibration</span><span class="marquee-dot">•</span>
+      <span class="marquee-word">Platform-Native Adaptation</span><span class="marquee-dot">•</span>
+      <span class="marquee-word">Decision-Making Principles</span><span class="marquee-dot">•</span>
+      <span class="marquee-word">Response Pacing Logic</span><span class="marquee-dot">•</span>
+      <span class="marquee-word">Initiative Models</span><span class="marquee-dot">•</span>
+      <span class="marquee-word">Emotional Calibration</span><span class="marquee-dot">•</span>
+      <span class="marquee-word">Platform-Native Adaptation</span><span class="marquee-dot">•</span>
+      <span class="marquee-word">Decision-Making Principles</span><span class="marquee-dot">•</span>
+      <span class="marquee-word">Response Pacing Logic</span><span class="marquee-dot">•</span>
+    </div>
+  </div>
+</section>
+
+<div class="sep"></div>
+
+<!-- BESPOKE CHARACTERIZATION -->
+<section id="characterization">
+  <p class="eyebrow reveal">06 — BESPOKE CHARACTERIZATION</p>
+  <h2 class="arch-h2 reveal reveal-delay-1">Bespoke Characterization <em>at Scale</em></h2>
+  <p style="font-size:14px;color:var(--muted);max-width:560px;line-height:1.8;margin-top:20px;margin-bottom:0" class="reveal reveal-delay-2">
+    Every assistant has a personality — whether intentionally designed or not.<br>
+    Acapulco gives teams the ability to architect that personality with precision.
+  </p>
+
+  <div class="char-grid">
+    <div class="char-card reveal reveal-delay-1">
+      <p class="char-card-num">SYS — 001</p>
+      <h3 class="char-card-title">Operator Dynamics</h3>
+      <p class="char-card-body">High-agency behavioral systems designed for execution, coordination, and proactive assistance.</p>
+    </div>
+    <div class="char-card reveal reveal-delay-2">
+      <p class="char-card-num">SYS — 002</p>
+      <h3 class="char-card-title">iMessage Native</h3>
+      <p class="char-card-body">Built specifically for modern messaging environments with natural pacing, conversational rhythm, and platform-aware communication.</p>
+    </div>
+    <div class="char-card reveal reveal-delay-3">
+      <p class="char-card-num">SYS — 003</p>
+      <h3 class="char-card-title">Research Architect</h3>
+      <p class="char-card-body">Structured analytical behavior optimized for synthesis, exploration, and critical thinking.</p>
+    </div>
+    <div class="char-card reveal reveal-delay-1">
+      <p class="char-card-num">SYS — 004</p>
+      <h3 class="char-card-title">Adaptive Intelligence</h3>
+      <p class="char-card-body">Behavioral systems that dynamically adjust tone, verbosity, and initiative based on context.</p>
+    </div>
+    <div class="char-card reveal reveal-delay-2">
+      <p class="char-card-num">SYS — 005</p>
+      <h3 class="char-card-title">Concierge</h3>
+      <p class="char-card-body">White-glove interaction frameworks designed around anticipation, clarity, and attentiveness.</p>
+    </div>
+    <div class="char-card reveal reveal-delay-3">
+      <p class="char-card-num">SYS — ∞</p>
+      <h3 class="char-card-title">Hundreds More</h3>
+      <p class="char-card-body">A growing collection of meticulously refined behavioral systems designed for every imaginable use case.</p>
+    </div>
+  </div>
+</section>
+
+<div class="sep"></div>
+
+<!-- ARCHITECTURE -->
+<section id="architecture">
+  <p class="eyebrow reveal">07 — TECHNICAL ARCHITECTURE</p>
+  <h2 class="arch-h2 reveal reveal-delay-1">Designed Like <em>Infrastructure</em></h2>
+  <div class="arch-grid">
+    <div class="arch-copy reveal reveal-delay-2">
+      <p>Acapulco behaviors are modular, composable, and programmable.</p>
+      <p>Each behavioral system is a precision-engineered layer — not a prompt, not a persona, but a full-spectrum behavioral substrate.</p>
+      <p>These systems can be layered, combined, and customized to create assistants that behave exactly as intended, across thousands of interactions.</p>
+    </div>
+    <ul class="arch-list reveal reveal-delay-3">
+      <li>Conversational frameworks</li>
+      <li>Memory heuristics</li>
+      <li>Response pacing logic</li>
+      <li>Initiative models</li>
+      <li>Emotional calibration systems</li>
+      <li>Communication patterns</li>
+      <li>Platform adaptations</li>
+      <li>Decision-making principles</li>
+      <li>Formatting rules</li>
+      <li>Escalation logic</li>
+    </ul>
+  </div>
+</section>
+
+<div class="sep"></div>
+
+<!-- VISION -->
+<section id="vision">
+  <p class="eyebrow reveal">08 — THE NEXT FRONTIER</p>
+  <h2 class="vision-h2 reveal reveal-delay-1">
+    The next generation of AI products<br>
+    will not win because they are<br>
+    <em>marginally smarter.</em>
+  </h2>
+  <div class="vision-copy reveal reveal-delay-2">
+    <p>They will win because they communicate better. Because they understand context more naturally. Because they build trust more effectively.</p>
+    <p>Because they adapt. Because they feel intentional.</p>
+    <p>Acapulco is building the infrastructure layer that makes those experiences possible.</p>
+    <p>A future where behavior is programmable. Where personality is composable. Where every assistant can be crafted with the same level of care that great companies devote to products, brands, and human experiences.</p>
+  </div>
+</section>
+
+<div class="sep"></div>
+
+<!-- FOOTER / LET'S COLLABORATE -->
+<footer id="contact">
+  <div class="cta-block" id="cta-block" onclick="openModal()">
+    <div class="cta-curtain"></div>
+    <div class="cta-inner">
+      <h2 class="cta-h2">Let's <em>Collaborate</em></h2>
+      <span class="cta-arrow">↗</span>
+    </div>
+  </div>
+
+  <div class="footer-bar">
+    <div class="footer-time">
+      LOCAL TIME <span id="footer-clock">--:--:--.---</span>
+    </div>
+    <div class="footer-links">
+      <a href="mailto:ariareplyai@gmail.com">EMAIL</a>
+      <a href="https://ariareply.com" target="_blank">ARIAREPLY</a>
+    </div>
+    <span class="footer-loc">NYC | CDMX</span>
+    <p class="footer-copy">© <span id="footer-year"></span> ACAPULCO</p>
+  </div>
+</footer>
+
+<!-- Email Modal -->
+<div class="email-modal-overlay" id="email-modal">
+  <div class="email-modal">
+    <h3>Let's Collaborate</h3>
+    <p>Get in touch with the team at AriaReply. We'll respond within 24 hours.</p>
+    <input type="text" placeholder="YOUR NAME" id="modal-name">
+    <input type="email" placeholder="YOUR EMAIL" id="modal-email">
+    <textarea placeholder="TELL US ABOUT YOUR PROJECT" id="modal-msg"></textarea>
+    <div class="modal-actions">
+      <button class="btn-send" onclick="sendEmail()">SEND MESSAGE</button>
+      <button class="btn-cancel" onclick="closeModal()">CANCEL</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── CURSOR ───
+const dot = document.getElementById('cursor-dot');
+const ring = document.getElementById('cursor-ring');
+let mx = 0, my = 0, rx = 0, ry = 0;
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+function animCursor() {
+  rx += (mx - rx) * 0.12;
+  ry += (my - ry) * 0.12;
+  dot.style.left = mx + 'px'; dot.style.top = my + 'px';
+  ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+  requestAnimationFrame(animCursor);
+}
+animCursor();
+document.querySelectorAll('a,button,.char-card,.system-item,.arch-list li').forEach(el => {
+  el.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
+  el.addEventListener('mouseleave', () => document.body.classList.remove('cursor-hover'));
+});
+
+// ─── NAVBAR SCROLL ───
+window.addEventListener('scroll', () => {
+  document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 60);
+});
+
+// ─── REVEAL ON SCROLL ───
+const revealEls = document.querySelectorAll('.reveal');
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.12 });
+revealEls.forEach(el => io.observe(el));
+
+// ─── GRADUAL BLUR ───
+(function buildBlur() {
+  const container = document.getElementById('hero-blur');
+  const n = 8;
+  for (let i = 1; i <= n; i++) {
+    const p = i / n;
+    const blurVal = Math.pow(2, p * 3.5) * 0.05;
+    const p1 = Math.round(((i-1)/n)*100*10)/10;
+    const p2 = Math.round((i/n)*100*10)/10;
+    const p3 = Math.min(100, Math.round(((i+1)/n)*100*10)/10);
+    const div = document.createElement('div');
+    div.style.cssText = `
+      position:absolute;inset:0;
+      mask-image:linear-gradient(to bottom,transparent ${p1}%,black ${p2}%,black ${p3}%,transparent 100%);
+      -webkit-mask-image:linear-gradient(to bottom,transparent ${p1}%,black ${p2}%,black ${p3}%,transparent 100%);
+      backdrop-filter:blur(${blurVal.toFixed(3)}rem);
+      -webkit-backdrop-filter:blur(${blurVal.toFixed(3)}rem);
+      pointer-events:none;
+    `;
+    container.appendChild(div);
+  }
+})();
+
+// ─── SYSTEMS LIST ───
+const systems = [
+  {
+    name: 'iMessage Native',
+    tags: ['Platform-Native','Conversational','Rhythm'],
+    year: '2024',
+    img: 'imessage'
+  },
+  {
+    name: 'WhatsApp Intelligence',
+    tags: ['Messaging','Adaptive','Global'],
+    year: '2024',
+    img: 'whatsapp'
+  },
+  {
+    name: 'Social Presence',
+    tags: ['Instagram','Brand Voice','Engagement'],
+    year: '2023',
+    img: 'instagram'
+  },
+  {
+    name: 'Operator Dynamics',
+    tags: ['High-Agency','Execution','Coordination'],
+    year: '2023',
+    img: null
+  },
+];
+
+// Simple SVG logos for iMessage, WhatsApp, Instagram
+const logos = {
+  imessage: `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:80px;height:80px">
+    <rect width="100" height="100" rx="22" fill="#3DD650"/>
+    <path d="M50 18C31.2 18 16 30.8 16 46.5c0 8.2 4.2 15.6 10.8 20.6L24 82l16.5-6.5A40.4 40.4 0 0050 77c18.8 0 34-12.8 34-30.5S68.8 18 50 18z" fill="white"/>
+  </svg>`,
+  whatsapp: `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:80px;height:80px">
+    <rect width="100" height="100" rx="22" fill="#25D366"/>
+    <path d="M50 17C31.8 17 17 31.8 17 50c0 5.9 1.6 11.4 4.4 16.2L17 83l17.3-4.3A32.8 32.8 0 0050 83c18.2 0 33-14.8 33-33S68.2 17 50 17zm16.4 45.6c-.7 1.9-3.9 3.6-5.4 3.8-1.4.2-3.1.3-5-.3-1.2-.4-2.7-.9-4.6-1.7-8.1-3.5-13.4-11.7-13.8-12.2-.4-.6-3.3-4.4-3.3-8.4s2.1-5.9 2.8-6.7c.7-.8 1.6-.9 2.1-.9h1.5c.5 0 1.1.2 1.7 1.3.7 1.3 2.3 5.6 2.5 6 .2.4.3.8.1 1.3-.2.5-.3.8-.7 1.2l-1 1.1c-.4.4-.8.8-.3 1.6.4.8 1.9 3.2 4.1 5.1 2.8 2.5 5.2 3.3 5.9 3.7.7.3 1.2.3 1.6-.2.5-.5 2-2.3 2.5-3.1.5-.8 1-.7 1.7-.4.7.3 4.5 2.1 5.3 2.5.8.4 1.3.6 1.5 1 .2.3-.1 2-.8 3.9z" fill="white"/>
+  </svg>`,
+  instagram: `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:80px;height:80px">
+    <defs>
+      <linearGradient id="ig" x1="0%" y1="100%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#f09433"/>
+        <stop offset="25%" stop-color="#e6683c"/>
+        <stop offset="50%" stop-color="#dc2743"/>
+        <stop offset="75%" stop-color="#cc2366"/>
+        <stop offset="100%" stop-color="#bc1888"/>
+      </linearGradient>
+    </defs>
+    <rect width="100" height="100" rx="22" fill="url(#ig)"/>
+    <rect x="28" y="28" width="44" height="44" rx="12" stroke="white" stroke-width="4" fill="none"/>
+    <circle cx="50" cy="50" r="11" stroke="white" stroke-width="4" fill="none"/>
+    <circle cx="66" cy="34" r="3" fill="white"/>
+  </svg>`
+};
+
+const listEl = document.getElementById('systems-list');
+const floatImg = document.getElementById('float-img');
+const floatImgSrc = document.getElementById('float-img-src');
+
+systems.forEach((s, i) => {
+  const item = document.createElement('div');
+  item.className = 'system-item reveal';
+  if (i > 0) item.classList.add(`reveal-delay-${Math.min(i,4)}`);
+  item.innerHTML = `
+    <div class="system-link">
+      <span class="system-year">${s.year}</span>
+      <h3 class="system-name">${s.name}</h3>
+      <div class="system-tags">${s.tags.map(t=>`<span class="system-tag">${t}</span>`).join('')}</div>
+    </div>
+  `;
+  if (s.img && logos[s.img]) {
+    item.addEventListener('mouseenter', (e) => {
+      floatImgSrc.innerHTML = '';
+      floatImgSrc.insertAdjacentHTML('beforeend', logos[s.img]);
+      floatImg.classList.add('visible');
+    });
+    item.addEventListener('mousemove', (e) => {
+      const rect = listEl.getBoundingClientRect();
+      floatImg.style.left = (e.clientX - rect.left) + 'px';
+      floatImg.style.top = (e.clientY - rect.top - 220) + 'px';
+    });
+    item.addEventListener('mouseleave', () => floatImg.classList.remove('visible'));
+  }
+  listEl.appendChild(item);
+});
+
+// re-observe new items
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+// ─── FOOTER CLOCK ───
+function updateClock() {
+  const n = new Date();
+  const h = n.getHours().toString().padStart(2,'0');
+  const m = n.getMinutes().toString().padStart(2,'0');
+  const s = n.getSeconds().toString().padStart(2,'0');
+  const ms = n.getMilliseconds().toString().padStart(3,'0');
+  document.getElementById('footer-clock').textContent = `${h}:${m}:${s}.${ms}`;
+}
+setInterval(updateClock, 10);
+document.getElementById('footer-year').textContent = new Date().getFullYear();
+
+// ─── EMAIL MODAL ───
+function openModal() { document.getElementById('email-modal').classList.add('open'); }
+function closeModal() { document.getElementById('email-modal').classList.remove('open'); }
+document.getElementById('email-modal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeModal();
+});
+function sendEmail() {
+  const name = document.getElementById('modal-name').value.trim();
+  const email = document.getElementById('modal-email').value.trim();
+  const msg = document.getElementById('modal-msg').value.trim();
+  if (!name || !email || !msg) { alert('Please fill all fields.'); return; }
+  const subject = encodeURIComponent(`Acapulco Inquiry from ${name}`);
+  const body = encodeURIComponent(`From: ${name}\nEmail: ${email}\n\n${msg}`);
+  window.location.href = `mailto:ariareplyai@gmail.com?subject=${subject}&body=${body}`;
+  closeModal();
+}
+
+// ─── OIL SHADER (WebGL2) ───
+(function initOilShader() {
+  const canvas = document.getElementById('oil-canvas');
+  const gl = canvas.getContext('webgl2', {
+    alpha: false, antialias: false, depth: false,
+    stencil: false, premultipliedAlpha: false,
+    preserveDrawingBuffer: false, powerPreference: 'high-performance'
+  });
+  if (!gl) { canvas.style.background = 'radial-gradient(ellipse at center,#0a0a0f 0%,#000 70%)'; return; }
+  const floatExt = gl.getExtension('EXT_color_buffer_float');
+  const linearFloat = gl.getExtension('OES_texture_float_linear');
+  if (!floatExt) { canvas.style.background = 'radial-gradient(ellipse at center,#0a0a0f 0%,#000 70%)'; return; }
+
+  const baseVert = `#version 300 es
+  precision highp float;
+  in vec2 a_pos;
+  out vec2 v_uv;
+  out vec2 v_l; out vec2 v_r; out vec2 v_t; out vec2 v_b;
+  uniform vec2 u_texel;
+  void main() {
+    v_uv = a_pos * 0.5 + 0.5;
+    v_l = v_uv - vec2(u_texel.x, 0.0);
+    v_r = v_uv + vec2(u_texel.x, 0.0);
+    v_t = v_uv + vec2(0.0, u_texel.y);
+    v_b = v_uv - vec2(0.0, u_texel.y);
+    gl_Position = vec4(a_pos, 0.0, 1.0);
+  }`;
+
+  const copyFrag = `#version 300 es\nprecision highp float;\nin vec2 v_uv;\nuniform sampler2D u_tex;\nout vec4 o;\nvoid main(){o=texture(u_tex,v_uv);}`;
+  const clearFrag = `#version 300 es\nprecision highp float;\nin vec2 v_uv;\nuniform sampler2D u_tex;\nuniform float u_value;\nout vec4 o;\nvoid main(){o=u_value*texture(u_tex,v_uv);}`;
+
+  const splatFrag = `#version 300 es
+  precision highp float;
+  in vec2 v_uv;
+  uniform sampler2D u_target;
+  uniform float u_aspect;
+  uniform vec4 u_color;
+  uniform vec2 u_point;
+  uniform vec2 u_prev;
+  uniform float u_radius;
+  uniform float u_segment;
+  out vec4 o;
+  float sdSeg(vec2 p,vec2 a,vec2 b){vec2 pa=p-a,ba=b-a;float h=clamp(dot(pa,ba)/max(dot(ba,ba),1e-6),0.,1.);return length(pa-ba*h);}
+  void main(){
+    vec2 p=v_uv; p.x*=u_aspect;
+    vec2 a=u_prev; a.x*=u_aspect;
+    vec2 b=u_point; b.x*=u_aspect;
+    float d=mix(length(p-b),sdSeg(p,a,b),u_segment);
+    float s=exp(-d*d/max(u_radius,1e-5));
+    o=texture(u_target,v_uv)+s*u_color;
+  }`;
+
+  const advectFrag = `#version 300 es
+  precision highp float;
+  in vec2 v_uv;
+  uniform sampler2D u_velocity;
+  uniform sampler2D u_source;
+  uniform vec2 u_texel;
+  uniform vec2 u_velTexel;
+  uniform float u_dt;
+  uniform float u_dissipation;
+  out vec4 o;
+  void main(){
+    vec2 vel=texture(u_velocity,v_uv).xy;
+    vec2 coord=v_uv-u_dt*vel*u_velTexel;
+    vec4 result=texture(u_source,coord);
+    o=result/(1.+u_dissipation*u_dt);
+  }`;
+
+  const divergenceFrag = `#version 300 es
+  precision highp float;
+  in vec2 v_uv; in vec2 v_l; in vec2 v_r; in vec2 v_t; in vec2 v_b;
+  uniform sampler2D u_velocity;
+  out vec4 o;
+  void main(){
+    float L=texture(u_velocity,v_l).x, R=texture(u_velocity,v_r).x;
+    float T=texture(u_velocity,v_t).y, B=texture(u_velocity,v_b).y;
+    vec2 c=texture(u_velocity,v_uv).xy;
+    if(v_l.x<0.)L=-c.x; if(v_r.x>1.)R=-c.x;
+    if(v_t.y>1.)T=-c.y; if(v_b.y<0.)B=-c.y;
+    o=vec4(0.5*(R-L+T-B),0.,0.,1.);
+  }`;
+
+  const curlFrag = `#version 300 es
+  precision highp float;
+  in vec2 v_uv; in vec2 v_l; in vec2 v_r; in vec2 v_t; in vec2 v_b;
+  uniform sampler2D u_velocity;
+  out vec4 o;
+  void main(){
+    float L=texture(u_velocity,v_l).y, R=texture(u_velocity,v_r).y;
+    float T=texture(u_velocity,v_t).x, B=texture(u_velocity,v_b).x;
+    o=vec4(0.5*(R-L-T+B),0.,0.,1.);
+  }`;
+
+  const vorticityFrag = `#version 300 es
+  precision highp float;
+  in vec2 v_uv; in vec2 v_l; in vec2 v_r; in vec2 v_t; in vec2 v_b;
+  uniform sampler2D u_velocity; uniform sampler2D u_curl;
+  uniform float u_curlStrength; uniform float u_dt;
+  out vec4 o;
+  void main(){
+    float L=texture(u_curl,v_l).x, R=texture(u_curl,v_r).x;
+    float T=texture(u_curl,v_t).x, B=texture(u_curl,v_b).x;
+    float C=texture(u_curl,v_uv).x;
+    vec2 force=0.5*vec2(abs(T)-abs(B),abs(R)-abs(L));
+    force/=max(length(force),1e-4);
+    force*=u_curlStrength*C; force.y*=-1.;
+    vec2 vel=texture(u_velocity,v_uv).xy+force*u_dt;
+    vel=clamp(vel,vec2(-1000.),vec2(1000.));
+    o=vec4(vel,0.,1.);
+  }`;
+
+  const pressureFrag = `#version 300 es
+  precision highp float;
+  in vec2 v_uv; in vec2 v_l; in vec2 v_r; in vec2 v_t; in vec2 v_b;
+  uniform sampler2D u_pressure; uniform sampler2D u_divergence;
+  out vec4 o;
+  void main(){
+    float L=texture(u_pressure,v_l).x, R=texture(u_pressure,v_r).x;
+    float T=texture(u_pressure,v_t).x, B=texture(u_pressure,v_b).x;
+    float D=texture(u_divergence,v_uv).x;
+    o=vec4((L+R+T+B-D)*0.25,0.,0.,1.);
+  }`;
+
+  const gradientFrag = `#version 300 es
+  precision highp float;
+  in vec2 v_uv; in vec2 v_l; in vec2 v_r; in vec2 v_t; in vec2 v_b;
+  uniform sampler2D u_pressure; uniform sampler2D u_velocity;
+  out vec4 o;
+  void main(){
+    float L=texture(u_pressure,v_l).x, R=texture(u_pressure,v_r).x;
+    float T=texture(u_pressure,v_t).x, B=texture(u_pressure,v_b).x;
+    vec2 v=texture(u_velocity,v_uv).xy-vec2(R-L,T-B);
+    o=vec4(v,0.,1.);
+  }`;
+
+  const renderFrag = `#version 300 es
+  precision highp float;
+  in vec2 v_uv;
+  uniform sampler2D u_dye; uniform sampler2D u_velocity;
+  uniform vec2 u_resolution; uniform vec2 u_dyeTexel; uniform float u_time;
+  out vec4 fragColor;
+  float hash21(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
+  float vnoise(vec2 p){vec2 i=floor(p);vec2 f=fract(p);float a=hash21(i),b=hash21(i+vec2(1.,0.)),c=hash21(i+vec2(0.,1.)),d=hash21(i+vec2(1.,1.));vec2 u=f*f*(3.-2.*f);return mix(mix(a,b,u.x),mix(c,d,u.x),u.y);}
+  vec3 thinFilm(float opd){const float PI=3.14159265;float r=cos(2.*PI*opd/650.),g=cos(2.*PI*opd/550.),b=cos(2.*PI*opd/450.);vec3 c=vec3(r,g,b);return c*c;}
+  vec3 aces(vec3 x){const float a=2.51,b=0.03,c=2.43,d=0.59,e=0.14;return clamp((x*(a*x+b))/(x*(c*x+d)+e),0.,1.);}
+  float fresnel(float cosTheta,float F0){float m=clamp(1.-cosTheta,0.,1.);return F0+(1.-F0)*pow(m,5.);}
+  float ggx(float NdotH,float roughness){float a=roughness*roughness,a2=a*a,d=(NdotH*NdotH)*(a2-1.)+1.;return a2/(3.14159265*d*d);}
+  void main(){
+    vec2 uv=v_uv; vec2 e=u_dyeTexel;
+    float hC=clamp(texture(u_dye,uv).a,0.,1.5);
+    float hL=clamp(texture(u_dye,uv-vec2(e.x,0.)).a,0.,1.5);
+    float hR=clamp(texture(u_dye,uv+vec2(e.x,0.)).a,0.,1.5);
+    float hT=clamp(texture(u_dye,uv+vec2(0.,e.y)).a,0.,1.5);
+    float hB=clamp(texture(u_dye,uv-vec2(0.,e.y)).a,0.,1.5);
+    float hs=60.; vec3 n=normalize(vec3((hL-hR)*hs,(hB-hT)*hs,1.));
+    vec3 V=vec3(0.,0.,1.);
+    vec3 L1=normalize(vec3(0.45,0.55,0.85)),L2=normalize(vec3(-0.6,-0.3,0.7));
+    float NdotV=clamp(dot(n,V),0.,1.);
+    vec3 H1=normalize(L1+V),H2=normalize(L2+V);
+    float spec1=ggx(clamp(dot(n,H1),0.,1.),0.18),spec2=ggx(clamp(dot(n,H2),0.,1.),0.32);
+    vec3 R2=reflect(-V,n);
+    vec2 envUV=uv+R2.xy*0.08; float envY=clamp(envUV.y,0.,1.);
+    vec3 env=mix(vec3(0.002,0.004,0.007),vec3(0.008,0.007,0.005),smoothstep(0.,1.,envY));
+    float F=fresnel(NdotV,0.012);
+    float thickness=1800.*hC+12.*vnoise(uv*6.+u_time*0.05)*hC;
+    float opd=thickness*(2.*NdotV);
+    vec3 iri=thinFilm(opd);
+    float iriMask=smoothstep(0.02,0.35,hC);
+    vec2 vel=texture(u_velocity,uv).xy;
+    float speed=length(vel);
+    vec2 vdir=speed>1e-4?vel/speed:vec2(0.,1.);
+    float aniso=abs(dot(n.xy,vec2(-vdir.y,vdir.x)));
+    float streak=pow(aniso,6.)*smoothstep(0.,8.,speed);
+    vec3 base=vec3(0.0008,0.0012,0.0020);
+    vec3 col=base;
+    col=mix(col,env,F*0.30);
+    col+=iri*iriMask*(0.45+0.55*F)*0.85;
+    col+=vec3(1.1,1.05,0.95)*spec1*(0.5+0.5*F)*iriMask;
+    col+=vec3(0.85,0.9,1.05)*spec2*(0.35+0.45*F)*iriMask;
+    col+=streak*vec3(0.7,0.65,0.55)*0.18*iriMask;
+    vec2 q=uv-0.5; float vig=smoothstep(0.85,0.15,length(q));
+    col*=mix(0.45,1.,vig);
+    float ca=clamp(speed*0.0015,0.,0.004);
+    if(ca>0.0001){float rC=texture(u_dye,uv+vec2(ca,0.)).a,bC=texture(u_dye,uv-vec2(ca,0.)).a;col.r+=(rC-hC)*0.10;col.b+=(bC-hC)*0.10;}
+    col=aces(col*0.85);
+    col=pow(col,vec3(1./2.2));
+    col=max(col-vec3(0.008),vec3(0.));
+    float grain=(hash21(gl_FragCoord.xy+fract(u_time)*17.31)-0.5)*0.012;
+    col+=grain;
+    fragColor=vec4(col,1.);
+  }`;
+
+  function compile(src, type) {
+    const sh = gl.createShader(type);
+    gl.shaderSource(sh, src); gl.compileShader(sh);
+    if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(sh));
+    return sh;
+  }
+  function program(vs, fs) {
+    const p = gl.createProgram();
+    gl.attachShader(p, compile(vs, gl.VERTEX_SHADER));
+    gl.attachShader(p, compile(fs, gl.FRAGMENT_SHADER));
+    gl.linkProgram(p);
+    const u = {};
+    const nUniforms = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+    for (let i = 0; i < nUniforms; i++) { const info = gl.getActiveUniform(p, i); u[info.name] = gl.getUniformLocation(p, info.name); }
+    return { p, u };
+  }
+
+  const quad = new Float32Array([-1,-1, 3,-1, -1,3]);
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER, quad, gl.STATIC_DRAW);
+  const vao = gl.createVertexArray();
+  gl.bindVertexArray(vao);
+  gl.enableVertexAttribArray(0);
+  gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
+  gl.bindVertexArray(null);
+
+  const progs = {
+    copy: program(baseVert,copyFrag), clear: program(baseVert,clearFrag),
+    splat: program(baseVert,splatFrag), advect: program(baseVert,advectFrag),
+    divergence: program(baseVert,divergenceFrag), curl: program(baseVert,curlFrag),
+    vorticity: program(baseVert,vorticityFrag), pressure: program(baseVert,pressureFrag),
+    gradient: program(baseVert,gradientFrag), render: program(baseVert,renderFrag),
+  };
+
+  function createFBO(w,h,internal,format,type,filter) {
+    const tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D,tex);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,filter);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,filter);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+    gl.texImage2D(gl.TEXTURE_2D,0,internal,w,h,0,format,type,null);
+    const fbo = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,tex,0);
+    gl.viewport(0,0,w,h); gl.clearColor(0,0,0,0); gl.clear(gl.COLOR_BUFFER_BIT);
+    return { tex, fbo, w, h, texelX:1/w, texelY:1/h, attach(id){gl.activeTexture(gl.TEXTURE0+id);gl.bindTexture(gl.TEXTURE_2D,tex);return id;} };
+  }
+  function createDouble(w,h,internal,format,type,filter) {
+    let a=createFBO(w,h,internal,format,type,filter), b=createFBO(w,h,internal,format,type,filter);
+    return { get read(){return a;}, get write(){return b;}, swap(){const t=a;a=b;b=t;}, w,h,texelX:1/w,texelY:1/h };
+  }
+
+  const SIM_RES=256, DYE_RES=1024;
+  let velocity, dye, pressure, divergenceFbo, curlFbo, dprWidth=0, dprHeight=0;
+
+  function getRes(target,w,h){const ar=w/h; return ar>1?{w:Math.round(target*ar),h:target}:{w:target,h:Math.round(target/ar)};}
+  function initFBOs(){
+    const rect=canvas.getBoundingClientRect();
+    const dpr=Math.min(window.devicePixelRatio||1,2);
+    dprWidth=Math.max(1,Math.floor(rect.width*dpr));
+    dprHeight=Math.max(1,Math.floor(rect.height*dpr));
+    canvas.width=dprWidth; canvas.height=dprHeight;
+    const sim=getRes(SIM_RES,dprWidth,dprHeight);
+    const dyeR=getRes(DYE_RES,dprWidth,dprHeight);
+    const filter=linearFloat?gl.LINEAR:gl.NEAREST;
+    velocity=createDouble(sim.w,sim.h,gl.RG16F,gl.RG,gl.HALF_FLOAT,filter);
+    dye=createDouble(dyeR.w,dyeR.h,gl.RGBA16F,gl.RGBA,gl.HALF_FLOAT,filter);
+    pressure=createDouble(sim.w,sim.h,gl.R16F,gl.RED,gl.HALF_FLOAT,gl.NEAREST);
+    divergenceFbo=createFBO(sim.w,sim.h,gl.R16F,gl.RED,gl.HALF_FLOAT,gl.NEAREST);
+    curlFbo=createFBO(sim.w,sim.h,gl.R16F,gl.RED,gl.HALF_FLOAT,gl.NEAREST);
+  }
+  initFBOs();
+
+  function blit(target){
+    if(target){gl.viewport(0,0,target.w,target.h);gl.bindFramebuffer(gl.FRAMEBUFFER,target.fbo);}
+    else{gl.viewport(0,0,dprWidth,dprHeight);gl.bindFramebuffer(gl.FRAMEBUFFER,null);}
+    gl.bindVertexArray(vao); gl.drawArrays(gl.TRIANGLES,0,3);
+  }
+
+  const pointer={x:.5,y:.5,px:.5,py:.5,dx:0,dy:0,down:false,moved:false,speed:0,smoothSpeed:0};
+  function updatePointer(cx,cy){
+    const rect=canvas.getBoundingClientRect();
+    const nx=(cx-rect.left)/rect.width, ny=1-(cy-rect.top)/rect.height;
+    pointer.px=pointer.x; pointer.py=pointer.y;
+    pointer.x=nx; pointer.y=ny;
+    pointer.dx=nx-pointer.px; pointer.dy=ny-pointer.py;
+    pointer.speed=Math.sqrt(pointer.dx*pointer.dx+pointer.dy*pointer.dy);
+    pointer.moved=true;
+  }
+  canvas.addEventListener('pointermove', e=>updatePointer(e.clientX,e.clientY), {passive:true});
+  canvas.addEventListener('pointerdown', e=>{
+    pointer.down=true;
+    const rect=canvas.getBoundingClientRect();
+    pointer.x=(e.clientX-rect.left)/rect.width;
+    pointer.y=1-(e.clientY-rect.top)/rect.height;
+    pointer.px=pointer.x; pointer.py=pointer.y;
+  }, {passive:true});
+  window.addEventListener('pointerup', ()=>pointer.down=false, {passive:true});
+  new ResizeObserver(()=>initFBOs()).observe(canvas);
+
+  function splat(target,x,y,px,py,color,radius,asSegment){
+    const {p,u}=progs.splat;
+    gl.useProgram(p);
+    gl.uniform1i(u['u_target'],target.read.attach(0));
+    gl.uniform1f(u['u_aspect'],target.w/target.h);
+    gl.uniform2f(u['u_point'],x,y); gl.uniform2f(u['u_prev'],px,py);
+    gl.uniform4f(u['u_color'],color[0],color[1],color[2],color[3]);
+    gl.uniform1f(u['u_radius'],radius);
+    gl.uniform1f(u['u_segment'],asSegment?1:0);
+    blit(target.write); target.swap();
+  }
+  function applyPointerSplats(){
+    const {dx,dy}=pointer; const dlen=Math.hypot(dx,dy);
+    if(dlen<1e-5)return;
+    pointer.smoothSpeed=pointer.smoothSpeed*0.7+dlen*0.3;
+    const s=pointer.smoothSpeed;
+    const speedBoost=1+Math.min(s*140,22);
+    splat(velocity,pointer.x,pointer.y,pointer.px,pointer.py,[dx*4500*speedBoost,dy*4500*speedBoost,0,0],0.00026*(1+Math.min(s*18,3.5)),true);
+    splat(dye,pointer.x,pointer.y,pointer.px,pointer.py,[Math.min(0.18+s*8,1.4)*0.06,Math.min(0.18+s*8,1.4)*0.07,Math.min(0.18+s*8,1.4)*0.08,Math.min(0.18+s*8,1.4)],0.00026*(1+Math.min(s*18,3.5))*1.15,true);
+    pointer.px=pointer.x; pointer.py=pointer.y;
+    pointer.dx=0; pointer.dy=0; pointer.speed=0;
+  }
+  let idleT=0;
+  function idleDrift(dt){
+    idleT+=dt;
+    if(pointer.moved)return;
+    const cx=0.5+0.22*Math.sin(idleT*0.31), cy=0.5+0.22*Math.cos(idleT*0.24);
+    const px=0.5+0.22*Math.sin((idleT-dt)*0.31), py=0.5+0.22*Math.cos((idleT-dt)*0.24);
+    splat(velocity,cx,cy,px,py,[(cx-px)*2200,(cy-py)*2200,0,0],0.0004,true);
+    splat(dye,cx,cy,px,py,[0.004,0.005,0.006,0.08],0.0005,true);
+  }
+
+  let last=performance.now(), raf=0;
+  const startTime=performance.now();
+  let visible=!document.hidden;
+  document.addEventListener('visibilitychange',()=>visible=!document.hidden);
+
+  function step(dt){
+    const u={}; let p2, u2;
+    // Curl
+    ({p:p2,u:u2}=progs.curl); gl.useProgram(p2);
+    gl.uniform2f(u2['u_texel'],velocity.texelX,velocity.texelY);
+    gl.uniform1i(u2['u_velocity'],velocity.read.attach(0)); blit(curlFbo);
+    // Vorticity
+    ({p:p2,u:u2}=progs.vorticity); gl.useProgram(p2);
+    gl.uniform2f(u2['u_texel'],velocity.texelX,velocity.texelY);
+    gl.uniform1i(u2['u_velocity'],velocity.read.attach(0));
+    gl.uniform1i(u2['u_curl'],curlFbo.attach(1));
+    gl.uniform1f(u2['u_curlStrength'],22); gl.uniform1f(u2['u_dt'],dt);
+    blit(velocity.write); velocity.swap();
+    // Divergence
+    ({p:p2,u:u2}=progs.divergence); gl.useProgram(p2);
+    gl.uniform2f(u2['u_texel'],velocity.texelX,velocity.texelY);
+    gl.uniform1i(u2['u_velocity'],velocity.read.attach(0)); blit(divergenceFbo);
+    // Clear pressure
+    ({p:p2,u:u2}=progs.clear); gl.useProgram(p2);
+    gl.uniform1i(u2['u_tex'],pressure.read.attach(0));
+    gl.uniform1f(u2['u_value'],0.8); blit(pressure.write); pressure.swap();
+    // Pressure
+    ({p:p2,u:u2}=progs.pressure); gl.useProgram(p2);
+    gl.uniform2f(u2['u_texel'],pressure.texelX,pressure.texelY);
+    for(let i=0;i<24;i++){gl.uniform1i(u2['u_pressure'],pressure.read.attach(0));gl.uniform1i(u2['u_divergence'],divergenceFbo.attach(1));blit(pressure.write);pressure.swap();}
+    // Gradient
+    ({p:p2,u:u2}=progs.gradient); gl.useProgram(p2);
+    gl.uniform2f(u2['u_texel'],velocity.texelX,velocity.texelY);
+    gl.uniform1i(u2['u_pressure'],pressure.read.attach(0));
+    gl.uniform1i(u2['u_velocity'],velocity.read.attach(1));
+    blit(velocity.write); velocity.swap();
+    // Advect velocity
+    ({p:p2,u:u2}=progs.advect); gl.useProgram(p2);
+    gl.uniform2f(u2['u_texel'],velocity.texelX,velocity.texelY);
+    gl.uniform2f(u2['u_velTexel'],velocity.texelX,velocity.texelY);
+    gl.uniform1i(u2['u_velocity'],velocity.read.attach(0));
+    gl.uniform1i(u2['u_source'],velocity.read.attach(0));
+    gl.uniform1f(u2['u_dt'],dt); gl.uniform1f(u2['u_dissipation'],0.6);
+    blit(velocity.write); velocity.swap();
+    // Advect dye
+    gl.uniform2f(u2['u_texel'],dye.texelX,dye.texelY);
+    gl.uniform2f(u2['u_velTexel'],velocity.texelX,velocity.texelY);
+    gl.uniform1i(u2['u_velocity'],velocity.read.attach(0));
+    gl.uniform1i(u2['u_source'],dye.read.attach(1));
+    gl.uniform1f(u2['u_dt'],dt); gl.uniform1f(u2['u_dissipation'],1.2);
+    blit(dye.write); dye.swap();
+  }
+
+  function render(){
+    const {p,u}=progs.render; gl.useProgram(p);
+    gl.uniform1i(u['u_dye'],dye.read.attach(0));
+    gl.uniform1i(u['u_velocity'],velocity.read.attach(1));
+    gl.uniform2f(u['u_resolution'],dprWidth,dprHeight);
+    gl.uniform2f(u['u_dyeTexel'],dye.texelX,dye.texelY);
+    gl.uniform1f(u['u_time'],(performance.now()-startTime)/1000);
+    blit(null);
+  }
+
+  function frame(){
+    const now=performance.now();
+    let dt=Math.min((now-last)/1000,0.05); last=now;
+    if(visible){idleDrift(dt);applyPointerSplats();step(dt);render();}
+    raf=requestAnimationFrame(frame);
+  }
+  raf=requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
