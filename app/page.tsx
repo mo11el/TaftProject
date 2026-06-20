@@ -73,7 +73,14 @@ export default function DiaAnimation() {
             fontFamily: '"Rockwell", "Rockwell Nova", "Courier New", serif',
           }}
         >
-          <DiaTextReveal text="Enterprise" repeat repeatDelay={2} startOnView={false} once={false} />
+          <DiaTextReveal
+            text="Enterprise"
+            textColor="rgba(15, 23, 42, 0.12)"
+            repeat
+            repeatDelay={2}
+            startOnView={false}
+            once={false}
+          />
         </Link>
       </motion.div>
 
