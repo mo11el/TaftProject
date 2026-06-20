@@ -10,6 +10,7 @@ import { ScrollIndicator } from "@/components/scroll-indicator"
 import { ParticleEffect } from "@/components/particle-effect"
 import { ScrollArrow } from "@/components/scroll-arrow"
 import { MorphingText } from "@/components/morphing-text"
+import { DiaTextReveal } from "@/components/ui/dia-text-reveal"
 import { ShinyButton } from "@/components/shiny-button"
 
 // Custom easing curves - precisely tuned for premium feel
@@ -56,20 +57,32 @@ export default function DiaAnimation() {
   const morphingTextOpacity = useTransform(scrollYProgress, [0, 0.08], [1, 0])
   const morphingTextScale = useTransform(scrollYProgress, [0, 0.08], [1, 0.95])
 
+  const enterpriseOpacity = useTransform(scrollYProgress, [0, 0.05], [1, 0])
+
   return (
     <div ref={containerRef} className="relative">
-      {/* Enterprise Button - Fixed at top center */}
-      <Link
-        href="/acapulco"
-        className="fixed top-6 left-1/2 -translate-x-1/2 z-50 px-6 py-2 rounded-full backdrop-blur-md bg-white/10 border border-white/20 text-sm tracking-wider hover:bg-white/20 transition-all duration-300"
-        style={{
-          fontFamily: "Calibri, sans-serif",
-          color: "rgba(255, 255, 255, 0.9)",
-          textShadow: "0 1px 2px rgba(0, 0, 0, 0.1)",
-        }}
+      {/* Enterprise Button - Fixed at top right, fades out on scroll */}
+      <motion.div
+        className="fixed top-6 right-6 z-50"
+        style={{ opacity: enterpriseOpacity }}
       >
-        Enterprise
-      </Link>
+        <Link
+          href="/acapulco"
+          className="text-base tracking-wide transition-opacity duration-300 hover:opacity-70"
+          style={{
+            fontFamily: '"Rockwell", "Rockwell Nova", "Courier New", serif',
+          }}
+        >
+          <DiaTextReveal
+            text="Enterprise"
+            textColor="rgba(15, 23, 42, 0.12)"
+            repeat
+            repeatDelay={2}
+            startOnView={false}
+            once={false}
+          />
+        </Link>
+      </motion.div>
 
       {/* Living Canvas Background - Subtly shifting colors */}
       <motion.div
