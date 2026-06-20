@@ -4,7 +4,7 @@ import type React from "react"
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { X } from "lucide-react"
-import { Liquid, defaultColors, type Colors } from "./liquid-gradient"
+import { GlassButton } from "./ui/glass-button"
 
 interface EmailSignupModalProps {
   isOpen: boolean
@@ -16,7 +16,6 @@ export function EmailSignupModal({ isOpen, onClose }: EmailSignupModalProps) {
   const [phone, setPhone] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
-  const [isButtonHovered, setIsButtonHovered] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -133,20 +132,15 @@ export function EmailSignupModal({ isOpen, onClose }: EmailSignupModalProps) {
                       />
                     </div>
 
-                    <button
+                    <GlassButton
                       type="submit"
+                      size="lg"
                       disabled={isSubmitting}
-                      onMouseEnter={() => setIsButtonHovered(true)}
-                      onMouseLeave={() => setIsButtonHovered(false)}
-                      className="relative w-full h-14 rounded-2xl overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full"
+                      contentClassName="text-center text-lg"
                     >
-                      <div className="absolute inset-0">
-                        <Liquid isHovered={isButtonHovered} colors={defaultColors} />
-                      </div>
-                      <span className="relative z-10 font-bold text-white text-lg">
-                        {isSubmitting ? "Submitting..." : "Try Aria Now"}
-                      </span>
-                    </button>
+                      {isSubmitting ? "Submitting..." : "Try Aria Now"}
+                    </GlassButton>
                   </form>
                 </div>
               ) : (
